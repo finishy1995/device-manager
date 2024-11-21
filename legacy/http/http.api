@@ -1,0 +1,28 @@
+syntax = "v1"
+
+type GetMetadataRequest {
+	SN string `form:"sn"`
+}
+
+type GetMetadataResponse {
+	Data string `json:"data"`
+	Code int    `json:"code"`
+}
+
+type UpdateMetadataRequest {
+	SN     string            `json:"sn"`
+	Params map[string]string `json:"params"`
+}
+
+type UpdateMetadataResponse {
+	Code int `json:"code"`
+}
+
+service http-api {
+	@handler GetMetadataHandler
+	get /metadata (GetMetadataRequest) returns (GetMetadataResponse) // Get metadata by SN
+
+	@handler UpdateMetadataHandler
+	post /metadata (UpdateMetadataRequest) returns (UpdateMetadataResponse) // Update metadata by SN
+}
+
