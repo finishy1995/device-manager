@@ -18,11 +18,24 @@ type UpdateMetadataResponse {
 	Code int `json:"code"`
 }
 
+type GetMetricsRequest {
+	SN        string `form:"sn"`
+	StartTime int64  `form:"start_time"`
+	EndTime   int64  `form:"end_time"`
+}
+
+type GetMetricsResponse {
+	Data string `json:"data"`
+	Code int    `json:"code"`
+}
+
 service http-api {
 	@handler GetMetadataHandler
 	get /metadata (GetMetadataRequest) returns (GetMetadataResponse) // Get metadata by SN
 
 	@handler UpdateMetadataHandler
 	post /metadata (UpdateMetadataRequest) returns (UpdateMetadataResponse) // Update metadata by SN
-}
 
+	@handler GetMetricsHandler
+	get /metrics (GetMetricsRequest) returns (GetMetricsResponse) // Get device metrics
+}

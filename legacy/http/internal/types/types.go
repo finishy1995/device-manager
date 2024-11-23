@@ -12,6 +12,17 @@ type GetMetadataResponse struct {
 	Code int    `json:"code"`
 }
 
+type GetMetricsRequest struct {
+	SN        string `form:"sn"`
+	StartTime int64  `form:"start_time"`
+	EndTime   int64  `form:"end_time"`
+}
+
+type GetMetricsResponse struct {
+	Data string `json:"data"`
+	Code int    `json:"code"`
+}
+
 type UpdateMetadataRequest struct {
 	SN     string            `json:"sn"`
 	Params map[string]string `json:"params"`

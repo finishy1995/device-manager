@@ -1,8 +1,8 @@
 package svc
 
 import (
-	"finishy1995/device-manager/legacy/http/internal/config"
 	"finishy1995/device-manager/legacy/model"
+	"finishy1995/device-manager/legacy/processor/internal/config"
 
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
 )

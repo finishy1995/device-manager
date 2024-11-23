@@ -1,0 +1,62 @@
+syntax = "proto3";
+
+package processor;
+
+option go_package = "./processor";
+
+message GenerateDemoMetadataReq {
+  int32 deviceNumber = 1;
+  int32 deviceParamNumber = 2;
+}
+
+message GenerateDemoMetadataResp {
+  int32 code = 1;
+}
+
+message UpdateMetadataReq {
+  int32 deviceNumber = 1;
+  int32 deviceParamNumber = 2;
+  int32 thread = 3;
+  int32 seconds = 4;
+}
+
+message UpdateMetadataResp {
+  int32 jobId = 1;
+}
+
+message GetUpdateResultReq {
+  int32 jobId = 1;
+}
+
+message GetUpdateResultResp {
+  bool end = 1; 
+  int32 deviceNumber = 2;
+  int32 deviceParamNumber = 3;
+  int32 thread = 4;
+  int32 seconds = 5;
+  int32 successDeviceCount = 6;
+  int64 averageLatencyMicroseconds = 7;
+}
+
+message GenerateDemoDeviceDataReq {
+  int32 deviceNumber = 1;
+  int64 startTime = 2;
+  int64 endTime = 3;
+}
+
+message GenerateDemoDeviceDataResp {
+  int32 code = 1;
+}
+
+service Processor {
+  // DEMO use
+  rpc GenerateDemoMetadata(GenerateDemoMetadataReq) returns (GenerateDemoMetadataResp);
+
+  // Benchmark use
+  rpc UpdateMetadata(UpdateMetadataReq) returns (UpdateMetadataResp);
+  // Benchmark use
+  rpc GetUpdateResult(GetUpdateResultReq) returns (GetUpdateResultResp);
+
+  // DEMO use
+  rpc GenerateDemoDeviceData(GenerateDemoDeviceDataReq) returns (GenerateDemoDeviceDataResp);
+}

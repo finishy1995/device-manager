@@ -47,7 +47,8 @@ func (l *UpdateMetadataLogic) UpdateMetadata(req *types.UpdateMetadataRequest) (
 			ParamValue: sql.NullString{String: v, Valid: true},
 		})
 	}
-	err = l.svcCtx.DeviceMetadataModel.Upsert(l.ctx, data)
+	// TODO: batch result error handler
+	_, err = l.svcCtx.DeviceMetadataModel.Upsert(l.ctx, data)
 	if err == nil {
 		resp.Code = 200
 	}

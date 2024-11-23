@@ -24,6 +24,11 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 				Path:    "/metadata",
 				Handler: UpdateMetadataHandler(serverCtx),
 			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/metrics",
+				Handler: GetMetricsHandler(serverCtx),
+			},
 		},
 	)
 }

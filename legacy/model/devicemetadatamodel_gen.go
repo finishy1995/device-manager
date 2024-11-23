@@ -30,7 +30,7 @@ type (
 		FindByDeviceSn(ctx context.Context, deviceSn string) ([]*DeviceMetadata, error)
 		FindOneByDeviceSnParamType(ctx context.Context, deviceSn string, paramType int64) (*DeviceMetadata, error)
 		Update(ctx context.Context, data *DeviceMetadata) error
-		Upsert(ctx context.Context, data []*DeviceMetadata) error
+		Upsert(ctx context.Context, data []*DeviceMetadata) (*BatchResult, error)
 		Delete(ctx context.Context, id int64) error
 	}
 
@@ -116,18 +116,68 @@ func (m *defaultDeviceMetadataModel) Update(ctx context.Context, newData *Device
 	return err
 }
 
-func (m *defaultDeviceMetadataModel) Upsert(ctx context.Context, data []*DeviceMetadata) error {
-	err := m.conn.TransactCtx(ctx, func(ctx context.Context, session sqlx.Session) error {
-		for _, d := range data {
-			query := fmt.Sprintf("insert into %s (%s) values (?, ?, ?) on duplicate key update `param_value` = ?", m.table, deviceMetadataRowsExpectAutoSet)
-			_, err := session.Exec(query, d.DeviceSn, d.ParamType, d.ParamValue, d.ParamValue)
-			if err != nil {
-				return err
-			}
-		}
-		return nil
-    })
-	return err
+const BatchSize = 1000
+
+// BatchResult stores the execution results of batch processing
+type BatchResult struct {
+    SuccessCount int      // Number of successfully processed records
+    FailedBatch  []int    // Indexes of failed batches
+    Err          error    // Last error encountered
+}
+
+func (m *defaultDeviceMetadataModel) Upsert(ctx context.Context, data []*DeviceMetadata) (*BatchResult, error) {
+    if len(data) == 0 {
+        return &BatchResult{}, nil
+    }
+
+    result := &BatchResult{}
+    
+    // Build base SQL statement
+    baseSQL := fmt.Sprintf("insert into %s (%s) values ", m.table, deviceMetadataRowsExpectAutoSet)
+    
+    // Process data in batches
+    for i := 0; i < len(data); i += BatchSize {
+        end := i + BatchSize
+        if end > len(data) {
+            end = len(data)
+        }
+        
+        // Get current batch data
+        batchData := data[i:end]
+        
+        // Construct SQL statement
+        var builder strings.Builder
+        builder.WriteString(baseSQL)
+        
+        // Build parameter placeholders and values array
+        values := make([]interface{}, 0, len(batchData)*3)
+        for j := 0; j < len(batchData); j++ {
+            if j > 0 {
+                builder.WriteString(",")
+            }
+            builder.WriteString("(?,?,?)")
+            values = append(values, batchData[j].DeviceSn, batchData[j].ParamType, batchData[j].ParamValue)
+        }
+        
+        // Append on duplicate key update clause
+        builder.WriteString(" on duplicate key update `param_value` = VALUES(`param_value`)")
+        
+        // Execute current batch within a transaction
+        err := m.conn.TransactCtx(ctx, func(ctx context.Context, session sqlx.Session) error {
+            _, err := session.Exec(builder.String(), values...)
+            return err
+        })
+        
+        if err != nil {
+            result.FailedBatch = append(result.FailedBatch, i/BatchSize)
+            result.Err = err
+            return result, err
+        }
+        
+        result.SuccessCount += len(batchData)
+    }
+    
+    return result, nil
 }
 
 func (m *defaultDeviceMetadataModel) tableName() string {
