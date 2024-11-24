@@ -16,6 +16,16 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 		[]rest.Route{
 			{
 				Method:  http.MethodGet,
+				Path:    "/generate/devicedata",
+				Handler: GenerateDemoDeviceDataHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/generate/metadata",
+				Handler: GenerateDemoMetadataHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
 				Path:    "/metadata",
 				Handler: GetMetadataHandler(serverCtx),
 			},
@@ -28,6 +38,16 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 				Method:  http.MethodGet,
 				Path:    "/metrics",
 				Handler: GetMetricsHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodPost,
+				Path:    "/update/metadata",
+				Handler: RandomUpdateMetadataHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/update/result",
+				Handler: GetRandomUpdateResultHandler(serverCtx),
 			},
 		},
 	)

@@ -54,9 +54,20 @@ func (t *task) Run(dataSource string) {
 	var wg sync.WaitGroup
 	wg.Add(int(t.thread))
 
+	// Calculate the range of devices each thread is responsible for
+	segmentSize := t.deviceNumber / t.thread
+	if t.deviceNumber%t.thread != 0 {
+		segmentSize++ // Handle cases where devices cannot be evenly distributed
+	}
+
 	// Start specified number of goroutines
 	for i := int32(0); i < t.thread; i++ {
-		go func() {
+		startDevice := i * segmentSize
+		endDevice := (i+1)*segmentSize - 1
+		if endDevice >= t.deviceNumber {
+			endDevice = t.deviceNumber - 1 // Ensure the last segment doesn't exceed total devices
+		}
+		go func(start, end int32) {
 			defer wg.Done()
 			model := model.NewDeviceMetadataModel(sqlx.NewMysql(dataSource))
 
@@ -66,7 +77,7 @@ func (t *task) Run(dataSource string) {
 				case <-ctx.Done():
 					return
 				default:
-					data := generateDemoMetadataByRandomDevice(t.deviceNumber, t.deviceParamNumber, BatchSize)
+					data := generateDemoMetadataByDeviceRange(start, end, t.deviceParamNumber, BatchSize)
 					start := time.Now()
 					result, err := model.Upsert(ctx, data)
 					end := time.Now()
@@ -78,7 +89,7 @@ func (t *task) Run(dataSource string) {
 					t.successDeviceCount += int32(result.SuccessCount) / t.deviceParamNumber
 				}
 			}
-		}()
+		}(startDevice, endDevice)
 	}
 
 	// Wait for all goroutines to complete
@@ -101,21 +112,19 @@ func generateDemoMetadata(deviceNumber int32, deviceParamNumber int32) []*model.
 	return result
 }
 
-func generateDemoMetadataByRandomDevice(deviceNumber int32, deviceParamNumber int32, batchSize int) []*model.DeviceMetadata {
+func generateDemoMetadataByDeviceRange(startDevice, endDevice int32, deviceParamNumber int32, batchSize int) []*model.DeviceMetadata {
 	result := make([]*model.DeviceMetadata, 0, batchSize)
-	// Generate random device metadata batchSize times
+	// Generate random device metadata within the specified range
 	for i := 0; i < batchSize; i++ {
+		// Select a random device number within the range [startDevice, endDevice]
+		randomDevice := rand.Int31n(endDevice-startDevice+1) + startDevice
 		for j := 0; j < int(deviceParamNumber); j++ {
 			data := &model.DeviceMetadata{}
-
-			// Generate random device number in range [0, deviceNumber)
-			randomDevice := rand.Int31n(deviceNumber)
 			mark := randomDevice%2 + 1
 			// Generate device SN
 			data.DeviceSn = fmt.Sprintf("SN-%d%011d", mark, randomDevice)
 			data.ParamType = int64(j)
 			data.ParamValue = sql.NullString{String: fmt.Sprintf("%05d", rand.Intn(90000)+10000), Valid: true}
-
 			result = append(result, data)
 		}
 	}
