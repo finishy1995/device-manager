@@ -1,0 +1,98 @@
+syntax = "v1"
+
+type GetMetadataRequest {
+	SN string `form:"sn"`
+}
+
+type GetMetadataResponse {
+	Data string `json:"data"`
+	Code int    `json:"code"`
+}
+
+type UpdateMetadataRequest {
+	SN     string            `json:"sn"`
+	Params map[string]string `json:"params"`
+}
+
+type UpdateMetadataResponse {
+	Code int `json:"code"`
+}
+
+type GetMetricsRequest {
+	SN        string `form:"sn"`
+	StartTime int64  `form:"start_time"`
+	EndTime   int64  `form:"end_time"`
+}
+
+type GetMetricsResponse {
+	Data string `json:"data"`
+	Code int    `json:"code"`
+}
+
+type GenerateDemoMetadataReq {
+	DeviceNumber      int `form:"device_number"`
+	DeviceParamNumber int `form:"device_param_number"`
+}
+
+type GenerateDemoMetadataResp {
+	Code int `json:"code"`
+}
+
+type UpdateMetadataReq {
+	DeviceNumber      int `json:"device_number"`
+	DeviceParamNumber int `json:"device_param_number"`
+	Thread            int `json:"thread"`
+	Seconds           int `json:"seconds"`
+}
+
+type UpdateMetadataResp {
+	JobId int `json:"job_id"`
+}
+
+type GetUpdateResultReq {
+	JobId int `form:"job_id"`
+}
+
+type GetUpdateResultResp {
+	End                        bool  `json:"end"`
+	DeviceNumber               int   `json:"device_number"`
+	DeviceParamNumber          int   `json:"device_param_number"`
+	Thread                     int   `json:"thread"`
+	Seconds                    int   `json:"seconds"`
+	SuccessDeviceCount         int   `json:"success_device_count"`
+	AverageLatencyMicroseconds int64 `json:"average_latency_microseconds"`
+}
+
+type GenerateDemoDeviceDataReq {
+	DeviceNumber int   `form:"device_number"`
+	StartTime    int64 `form:"start_time"`
+	EndTime      int64 `form:"end_time"`
+}
+
+type GenerateDemoDeviceDataResp {
+	Code int `json:"code"`
+}
+
+service http-api {
+	@handler GetMetadataHandler
+	get /metadata (GetMetadataRequest) returns (GetMetadataResponse) // Get metadata by SN
+
+	@handler UpdateMetadataHandler
+	post /metadata (UpdateMetadataRequest) returns (UpdateMetadataResponse) // Update metadata by SN
+
+	@handler GetMetricsHandler
+	get /metrics (GetMetricsRequest) returns (GetMetricsResponse) // Get device metrics
+
+	@handler GenerateDemoMetadataHandler
+	get /generate/metadata (GenerateDemoMetadataReq) returns (GenerateDemoMetadataResp) // DEMO use
+
+	@handler RandomUpdateMetadataHandler
+	post /update/metadata (UpdateMetadataReq) returns (UpdateMetadataResp) // Benchmark use
+
+	@handler GetRandomUpdateResultHandler
+	get /update/result (GetUpdateResultReq) returns (GetUpdateResultResp) // Benchmark use
+
+	@handler GenerateDemoDeviceDataHandler
+	get /generate/devicedata (GenerateDemoDeviceDataReq) returns (GenerateDemoDeviceDataResp) // DEMO use
+}
+
