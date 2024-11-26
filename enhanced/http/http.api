@@ -73,6 +73,25 @@ type GenerateDemoDeviceDataResp {
 	Code int `json:"code"`
 }
 
+type GenerateDeviceVectorDataReq {
+	StartTime int64 `form:"start_time"`
+	EndTime   int64 `form:"end_time"`
+}
+
+type GenerateDeviceVectorDataResp {
+	Code int `json:"code"`
+}
+
+type SearchBadDeviceReq {
+	Type  int `form:"type"` // 0: search all, 1: search fixed camera, 2: search random movement camera
+	Limit int `form:"limit"`
+}
+
+type SearchBadDeviceResp {
+	Code int    `json:"code"`
+	Data string `json:"data"`
+}
+
 service http-api {
 	@handler GetMetadataHandler
 	get /metadata (GetMetadataRequest) returns (GetMetadataResponse) // Get metadata by SN
@@ -94,5 +113,11 @@ service http-api {
 
 	@handler GenerateDemoDeviceDataHandler
 	get /generate/devicedata (GenerateDemoDeviceDataReq) returns (GenerateDemoDeviceDataResp) // DEMO use
+
+	@handler GenerateDeviceVectorDataHandler
+	get /generate/vector (GenerateDeviceVectorDataReq) returns (GenerateDeviceVectorDataResp) // Using camera rotation to generate device vector data
+
+	@handler SearchBadDeviceHandler
+	get /search/vector (SearchBadDeviceReq) returns (SearchBadDeviceResp) // Search bad device by Atlas MongoDB Vector Search
 }
 

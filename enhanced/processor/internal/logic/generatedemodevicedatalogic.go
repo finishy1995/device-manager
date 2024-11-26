@@ -56,10 +56,21 @@ func generateDemoCameraData(deviceNumber int32, startTime int64, endTime int64) 
 	for i := 0; i < int(deviceNumber); i++ {
 		batteryDec := rand.Intn(2) == 1
 		batteryNow := rand.Intn(10000)
-		rotationType := rand.Intn(100) // 0-97: normal, 98: fixed, 99: broken
+		rotationType := rand.Intn(100) // 模式确定：0-89 正常，90-94 渐进漂移，95-98 固定，99 非物理性旋转
 		rotationX := getRandomRotation()
 		rotationY := getRandomRotation()
 		rotationZ := getRandomRotation()
+
+		// 渐进漂移的角度增量
+		driftX := 0.0
+		driftY := 0.0
+		driftZ := 0.0
+		if rotationType >= 90 && rotationType <= 94 {
+			driftX = rand.Float64()*0.5 - 0.25 // 每秒随机变化 -0.25 到 +0.25 度
+			driftY = rand.Float64()*0.5 - 0.25
+			driftZ = rand.Float64()*0.5 - 0.25
+		}
+
 		for j := startTime; j < endTime; j++ {
 			data := &model.DeviceCameraData{}
 			data.DeviceSn = fmt.Sprintf("SN-%d%011d", 1, i)
@@ -77,23 +88,65 @@ func generateDemoCameraData(deviceNumber int32, startTime int64, endTime int64) 
 				}
 			}
 			data.BatteryLevel = uint64(batteryNow)
-			if rotationType > 98 {
-				data.RotationX = getRandomRotation()
-				data.RotationY = getRandomRotation()
-				data.RotationZ = getRandomRotation()
-			} else if rotationType == 98 {
+			// 旋转角度生成逻辑
+			switch {
+			case rotationType >= 90 && rotationType <= 94: // 渐进漂移
+				rotationX += driftX
+				rotationY += driftY
+				rotationZ += driftZ
+
+				// 保证角度范围在 [0, 360)
+				if rotationX < 0 {
+					rotationX += 360
+				}
+				if rotationX >= 360 {
+					rotationX -= 360
+				}
+				if rotationY < 0 {
+					rotationY += 360
+				}
+				if rotationY >= 360 {
+					rotationY -= 360
+				}
+				if rotationZ < 0 {
+					rotationZ += 360
+				}
+				if rotationZ >= 360 {
+					rotationZ -= 360
+				}
+
 				data.RotationX = rotationX
 				data.RotationY = rotationY
 				data.RotationZ = rotationZ
-			} else {
+
+			case rotationType >= 95 && rotationType <= 98: // 固定不动
+				data.RotationX = rotationX
+				data.RotationY = rotationY
+				data.RotationZ = rotationZ
+
+			case rotationType == 99: // 非物理性旋转
+				data.RotationX = getRandomRotation()
+				data.RotationY = getRandomRotation()
+				data.RotationZ = getRandomRotation()
+
+			default: // 正常模式
 				rotationX = getRandomChange(rotationX)
 				rotationY = getRandomChange(rotationY)
 				rotationZ = getRandomChange(rotationZ)
+
 				data.RotationX = rotationX
 				data.RotationY = rotationY
 				data.RotationZ = rotationZ
 			}
 
+			// 是否固定标志
+			if rotationType >= 95 && rotationType <= 98 {
+				data.IsFixed = 1
+			} else {
+				data.IsFixed = 0
+			}
+
+			// 将生成的数据添加到结果集中
 			result = append(result, data)
 		}
 	}

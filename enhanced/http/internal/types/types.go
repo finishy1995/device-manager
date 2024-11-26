@@ -22,6 +22,15 @@ type GenerateDemoMetadataResp struct {
 	Code int `json:"code"`
 }
 
+type GenerateDeviceVectorDataReq struct {
+	StartTime int64 `form:"start_time"`
+	EndTime   int64 `form:"end_time"`
+}
+
+type GenerateDeviceVectorDataResp struct {
+	Code int `json:"code"`
+}
+
 type GetMetadataRequest struct {
 	SN string `form:"sn"`
 }
@@ -54,6 +63,16 @@ type GetUpdateResultResp struct {
 	Seconds                    int   `json:"seconds"`
 	SuccessDeviceCount         int   `json:"success_device_count"`
 	AverageLatencyMicroseconds int64 `json:"average_latency_microseconds"`
+}
+
+type SearchBadDeviceReq struct {
+	Type  int `form:"type"` // 0: search all, 1: search fixed camera, 2: search random movement camera
+	Limit int `form:"limit"`
+}
+
+type SearchBadDeviceResp struct {
+	Code int    `json:"code"`
+	Data string `json:"data"`
 }
 
 type UpdateMetadataReq struct {

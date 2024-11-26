@@ -26,6 +26,11 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 			},
 			{
 				Method:  http.MethodGet,
+				Path:    "/generate/vector",
+				Handler: GenerateDeviceVectorDataHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
 				Path:    "/metadata",
 				Handler: GetMetadataHandler(serverCtx),
 			},
@@ -38,6 +43,11 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 				Method:  http.MethodGet,
 				Path:    "/metrics",
 				Handler: GetMetricsHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/search/vector",
+				Handler: SearchBadDeviceHandler(serverCtx),
 			},
 			{
 				Method:  http.MethodPost,
