@@ -3,6 +3,7 @@ FROM golang:alpine AS builder
 LABEL stage=gobuilder
 
 ENV CGO_ENABLED 0
+ENV GOOS linux
 
 RUN apk update --no-cache && apk add --no-cache tzdata
 
@@ -13,7 +14,8 @@ ADD go.sum .
 RUN go mod download
 COPY . .
 COPY legacy/http/etc /app/etc
-RUN go build -ldflags="-s -w" -o /app/http legacy/http/.\http.go
+RUN go mod tidy
+RUN go build -ldflags="-s -w" -o /app/http legacy/http/http.go
 
 
 FROM scratch
