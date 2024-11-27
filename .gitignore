@@ -45,4 +45,4 @@ dist/
 go.work
 
 # Code convert trace
-*/trace/
+*/target/trace/
