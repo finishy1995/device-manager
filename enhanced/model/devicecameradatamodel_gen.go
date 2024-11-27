@@ -6,170 +6,131 @@ package model
 
 import (
 	"context"
-	"database/sql"
-	"fmt"
-	"strings"
-
-	"github.com/zeromicro/go-zero/core/stores/builder"
-	"github.com/zeromicro/go-zero/core/stores/sqlx"
-	"github.com/zeromicro/go-zero/core/stringx"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
-
-var (
-	deviceCameraDataFieldNames          = builder.RawFieldNames(&DeviceCameraData{})
-	deviceCameraDataRows                = strings.Join(deviceCameraDataFieldNames, ",")
-	deviceCameraDataRowsExpectAutoSet   = strings.Join(stringx.Remove(deviceCameraDataFieldNames, "`id`", "`create_at`", "`create_time`", "`created_at`", "`update_at`", "`update_time`", "`updated_at`"), ",")
-	deviceCameraDataRowsWithPlaceHolder = strings.Join(stringx.Remove(deviceCameraDataFieldNames, "`id`", "`create_at`", "`create_time`", "`created_at`", "`update_at`", "`update_time`", "`updated_at`"), "=?,") + "=?"
-)
-
 type (
 	deviceCameraDataModel interface {
-		Insert(ctx context.Context, data *DeviceCameraData) (sql.Result, error)
+		Insert(ctx context.Context, data *DeviceCameraData) (*mongo.InsertOneResult, error)
 		FindOne(ctx context.Context, id int64) (*DeviceCameraData, error)
 		FindOneByDeviceSnTimestamp(ctx context.Context, deviceSn string, timestamp int64) (*DeviceCameraData, error)
 		FindByDeviceSnTimeRange(ctx context.Context, deviceSn string, startTimestamp int64, endTimestamp int64) ([]*DeviceCameraData, error)
-		Update(ctx context.Context, data *DeviceCameraData) error
-		Upsert(ctx context.Context, data []*DeviceCameraData) (*BatchResult, error)
-		Delete(ctx context.Context, id int64) error
+		Update(ctx context.Context, data *DeviceCameraData) (*mongo.UpdateResult, error)
+		Upsert(ctx context.Context, data []*DeviceCameraData)  (*BatchResult, error)
+		Delete(ctx context.Context, id int64)  error
 	}
 
 	defaultDeviceCameraDataModel struct {
-		conn  sqlx.SqlConn
+		conn  *mongo.Client
 		table string
 	}
 
 	DeviceCameraData struct {
-		Id           int64   `db:"id"`
-		DeviceSn     string  `db:"device_sn"`
-		Timestamp    int64   `db:"timestamp"`
-		IsFixed      int64   `db:"is_fixed"`
-		BatteryLevel uint64  `db:"battery_level"`
-		RotationX    float64 `db:"rotation_x"`
-		RotationY    float64 `db:"rotation_y"`
-		RotationZ    float64 `db:"rotation_z"`
+		Id           int64   `bson:"id"`
+		DeviceSn     string  `bson:"device_sn"`
+		Timestamp    int64   `bson:"timestamp"`
+		IsFixed      int64   `bson:"is_fixed"`
+		BatteryLevel uint64  `bson:"battery_level"`
+		RotationX    float64 `bson:"rotation_x"`
+		RotationY    float64 `bson:"rotation_y"`
+		RotationZ    float64 `bson:"rotation_z"`
 	}
 )
 
-func newDeviceCameraDataModel(conn sqlx.SqlConn) *defaultDeviceCameraDataModel {
+func newDeviceCameraDataModel(conn *mongo.Client) *defaultDeviceCameraDataModel {
 	return &defaultDeviceCameraDataModel{
 		conn:  conn,
-		table: "`device_camera_data`",
+		table: "device_camera_data",
 	}
 }
 
 func (m *defaultDeviceCameraDataModel) Delete(ctx context.Context, id int64) error {
-	query := fmt.Sprintf("delete from %s where `id` = ?", m.table)
-	_, err := m.conn.ExecCtx(ctx, query, id)
+	collection := m.conn.Database("test").Collection(m.table)
+	filter := bson.D{{"id", id}}
+	_, err := collection.DeleteOne(ctx, filter)
 	return err
 }
 
 func (m *defaultDeviceCameraDataModel) FindOne(ctx context.Context, id int64) (*DeviceCameraData, error) {
-	query := fmt.Sprintf("select %s from %s where `id` = ? limit 1", deviceCameraDataRows, m.table)
-	var resp DeviceCameraData
-	err := m.conn.QueryRowCtx(ctx, &resp, query, id)
-	switch err {
-	case nil:
-		return &resp, nil
-	case sqlx.ErrNotFound:
-		return nil, ErrNotFound
-	default:
+	collection := m.conn.Database("test").Collection(m.table)
+	filter := bson.D{{"id", id}}
+	var result DeviceCameraData
+	err := collection.FindOne(ctx, filter).Decode(&result)
+	if err != nil {
 		return nil, err
 	}
+	return &result, nil
 }
 
 func (m *defaultDeviceCameraDataModel) FindOneByDeviceSnTimestamp(ctx context.Context, deviceSn string, timestamp int64) (*DeviceCameraData, error) {
-	var resp DeviceCameraData
-	query := fmt.Sprintf("select %s from %s where `device_sn` = ? and `timestamp` = ? limit 1", deviceCameraDataRows, m.table)
-	err := m.conn.QueryRowCtx(ctx, &resp, query, deviceSn, timestamp)
-	switch err {
-	case nil:
-		return &resp, nil
-	case sqlx.ErrNotFound:
-		return nil, ErrNotFound
-	default:
+	collection := m.conn.Database("test").Collection(m.table)
+	filter := bson.D{{"device_sn", deviceSn}, {"timestamp", timestamp}}
+	var result DeviceCameraData
+	err := collection.FindOne(ctx, filter).Decode(&result)
+	if err != nil {
 		return nil, err
 	}
+	return &result, nil
 }
 
 func (m *defaultDeviceCameraDataModel) FindByDeviceSnTimeRange(ctx context.Context, deviceSn string, startTimestamp int64, endTimestamp int64) ([]*DeviceCameraData, error) {
-	query := fmt.Sprintf("select %s from %s where `device_sn` = ? and `timestamp` >= ? and `timestamp` <= ?", deviceCameraDataRows, m.table)
-	var resp []*DeviceCameraData
-	err := m.conn.QueryRowsCtx(ctx, &resp, query, deviceSn, startTimestamp, endTimestamp)
-	switch err {
-	case nil:
-		return resp, nil
-	case sqlx.ErrNotFound:
-		return nil, ErrNotFound
-	default:
+	collection := m.conn.Database("test").Collection(m.table)
+	filter := bson.D{{"device_sn", deviceSn}, {"timestamp", bson.D{{"$gte", startTimestamp}, {"$lte", endTimestamp}}}}
+	cursor, err := collection.Find(ctx, filter)
+	if err != nil {
 		return nil, err
 	}
+	var results []*DeviceCameraData
+	if err = cursor.All(ctx, &results); err != nil {
+		return nil, err
+	}
+	return results, nil
 }
 
-func (m *defaultDeviceCameraDataModel) Insert(ctx context.Context, data *DeviceCameraData) (sql.Result, error) {
-	query := fmt.Sprintf("insert into %s (%s) values (?, ?, ?, ?, ?, ?, ?)", m.table, deviceCameraDataRowsExpectAutoSet)
-	ret, err := m.conn.ExecCtx(ctx, query, data.DeviceSn, data.Timestamp, data.IsFixed, data.BatteryLevel, data.RotationX, data.RotationY, data.RotationZ)
-	return ret, err
+func (m *defaultDeviceCameraDataModel) Insert(ctx context.Context, data *DeviceCameraData) (*mongo.InsertOneResult, error) {
+	collection := m.conn.Database("test").Collection(m.table)
+	result, err := collection.InsertOne(ctx, data)
+	return result, err
 }
 
-func (m *defaultDeviceCameraDataModel) Update(ctx context.Context, newData *DeviceCameraData) error {
-	query := fmt.Sprintf("update %s set %s where `id` = ?", m.table, deviceCameraDataRowsWithPlaceHolder)
-	_, err := m.conn.ExecCtx(ctx, query, newData.DeviceSn, newData.Timestamp, newData.IsFixed, newData.BatteryLevel, newData.RotationX, newData.RotationY, newData.RotationZ, newData.Id)
-	return err
+func (m *defaultDeviceCameraDataModel) Update(ctx context.Context, newData *DeviceCameraData) (*mongo.UpdateResult, error) {
+	collection := m.conn.Database("test").Collection(m.table)
+	filter := bson.D{{"id", newData.Id}}
+	update := bson.D{{"$set", bson.D{{"device_sn", newData.DeviceSn}, {"timestamp", newData.Timestamp}, {"is_fixed", newData.IsFixed}, {"battery_level", newData.BatteryLevel}, {"rotation_x", newData.RotationX}, {"rotation_y", newData.RotationY}, {"rotation_z", newData.RotationZ}}}}
+	result, err := collection.UpdateOne(ctx, filter, update)
+	return result, err
 }
 
-func (m *defaultDeviceCameraDataModel) Upsert(ctx context.Context, data []*DeviceCameraData) (*BatchResult, error) {
-    if len(data) == 0 {
-        return &BatchResult{}, nil
-    }
+func (m *defaultDeviceCameraDataModel) Upsert(ctx context.Context, data []*DeviceCameraData)  (*BatchResult, error) {
+	if len(data) == 0 {
+		return &BatchResult{}, nil
+	}
 
-    result := &BatchResult{}
-    
-    // Build base SQL statement
-    baseSQL := fmt.Sprintf("insert into %s (%s) values ", m.table, deviceCameraDataRowsExpectAutoSet)
-    
-    // Process data in batches
-    for i := 0; i < len(data); i += BatchSize {
-        end := i + BatchSize
-        if end > len(data) {
-            end = len(data)
-        }
-        
-        // Get current batch data
-        batchData := data[i:end]
-        
-        // Construct SQL statement
-        var builder strings.Builder
-        builder.WriteString(baseSQL)
-        
-        // Build parameter placeholders and values array
-        values := make([]interface{}, 0, len(batchData)*3)
-        for j := 0; j < len(batchData); j++ {
-			if j > 0 {
-				builder.WriteString(", ")
-			}
-			builder.WriteString("(?, ?, ?, ?, ?, ?, ?)")
-			values = append(values, batchData[j].DeviceSn, batchData[j].Timestamp, batchData[j].IsFixed, batchData[j].BatteryLevel, batchData[j].RotationX, batchData[j].RotationY, batchData[j].RotationZ)
-        }
-        
-        // Append on duplicate key update clause
-		builder.WriteString(" on duplicate key update `device_sn` = values(`device_sn`), `timestamp` = values(`timestamp`), `is_fixed` = values(`is_fixed`), `battery_level` = values(`battery_level`), `rotation_x` = values(`rotation_x`), `rotation_y` = values(`rotation_y`), `rotation_z` = values(`rotation_z`)")
-        
-        // Execute current batch within a transaction
-        err := m.conn.TransactCtx(ctx, func(ctx context.Context, session sqlx.Session) error {
-            _, err := session.Exec(builder.String(), values...)
-            return err
-        })
-        
+	result := &BatchResult{}
+	collection := m.conn.Database("test").Collection(m.table)
+	for _, item := range data {
+		filter := bson.D{{"id", item.Id}}
+		update := bson.D{{"$set", bson.D{{"device_sn", item.DeviceSn}, {"timestamp", item.Timestamp}, {"is_fixed", item.IsFixed}, {"battery_level", item.BatteryLevel}, {"rotation_x", item.RotationX}, {"rotation_y", item.RotationY}, {"rotation_z", item.RotationZ}}}}
+		upsert := true
+		options := options.Update().SetUpsert(upsert)
+		_, err := collection.UpdateOne(ctx, filter, update, options)
+                if err != nil {
+		    //session.AbortTransaction(ctx)
+		    //result.FailedBatch = append(result.FailedBatch, i/BatchSize)
+                    result.Err = err
+                    return result, err
+		}
+	}
+	/*
+        err = session.CommitTransaction(ctx)
         if err != nil {
-            result.FailedBatch = append(result.FailedBatch, i/BatchSize)
-            result.Err = err
-            return result, err
+            return nil, err
         }
-        
-        result.SuccessCount += len(batchData)
-    }
-    
-    return result, nil
+	*/
+
+        result.SuccessCount  = 1
+	return result, nil
 }
 
 func (m *defaultDeviceCameraDataModel) tableName() string {

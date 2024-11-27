@@ -1,6 +1,8 @@
 package model
 
-import "github.com/zeromicro/go-zero/core/stores/sqlx"
+import (
+	"go.mongodb.org/mongo-driver/mongo"
+)
 
 var _ DeviceCameraDataModel = (*customDeviceCameraDataModel)(nil)
 
@@ -9,7 +11,7 @@ type (
 	// and implement the added methods in customDeviceCameraDataModel.
 	DeviceCameraDataModel interface {
 		deviceCameraDataModel
-		withSession(session sqlx.Session) DeviceCameraDataModel
+		// Removed withSession as MongoDB handles sessions differently
 	}
 
 	customDeviceCameraDataModel struct {
@@ -17,13 +19,12 @@ type (
 	}
 )
 
-// NewDeviceCameraDataModel returns a model for the database table.
-func NewDeviceCameraDataModel(conn sqlx.SqlConn) DeviceCameraDataModel {
+
+
+// NewDeviceCameraDataModel returns a model for the MongoDB collection.
+func NewDeviceCameraDataModel(client *mongo.Client) DeviceCameraDataModel {
 	return &customDeviceCameraDataModel{
-		defaultDeviceCameraDataModel: newDeviceCameraDataModel(conn),
+		defaultDeviceCameraDataModel: newDeviceCameraDataModel(client),
 	}
 }
 
-func (m *customDeviceCameraDataModel) withSession(session sqlx.Session) DeviceCameraDataModel {
-	return NewDeviceCameraDataModel(sqlx.NewSqlConnFromSession(session))
-}

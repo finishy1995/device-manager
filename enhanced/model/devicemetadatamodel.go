@@ -1,6 +1,8 @@
 package model
 
-import "github.com/zeromicro/go-zero/core/stores/sqlx"
+import (
+	"go.mongodb.org/mongo-driver/mongo"
+)
 
 var _ DeviceMetadataModel = (*customDeviceMetadataModel)(nil)
 
@@ -9,7 +11,7 @@ type (
 	// and implement the added methods in customDeviceMetadataModel.
 	DeviceMetadataModel interface {
 		deviceMetadataModel
-		withSession(session sqlx.Session) DeviceMetadataModel
+		// Removed withSession as MongoDB handles sessions differently
 	}
 
 	customDeviceMetadataModel struct {
@@ -17,13 +19,10 @@ type (
 	}
 )
 
-// NewDeviceMetadataModel returns a model for the database table.
-func NewDeviceMetadataModel(conn sqlx.SqlConn) DeviceMetadataModel {
+// NewDeviceMetadataModel returns a model for the MongoDB collection.
+func NewDeviceMetadataModel(client *mongo.Client) DeviceMetadataModel {
 	return &customDeviceMetadataModel{
-		defaultDeviceMetadataModel: newDeviceMetadataModel(conn),
+		defaultDeviceMetadataModel: newDeviceMetadataModel(client),
 	}
 }
 
-func (m *customDeviceMetadataModel) withSession(session sqlx.Session) DeviceMetadataModel {
-	return NewDeviceMetadataModel(sqlx.NewSqlConnFromSession(session))
-}

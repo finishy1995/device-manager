@@ -6,114 +6,120 @@ package model
 
 import (
 	"context"
-	"database/sql"
-	"fmt"
-	"strings"
 	"time"
 
-	"github.com/zeromicro/go-zero/core/stores/builder"
-	"github.com/zeromicro/go-zero/core/stores/sqlx"
-	"github.com/zeromicro/go-zero/core/stringx"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 var (
-	deviceMetadataFieldNames          = builder.RawFieldNames(&DeviceMetadata{})
-	deviceMetadataRows                = strings.Join(deviceMetadataFieldNames, ",")
-	deviceMetadataRowsExpectAutoSet   = strings.Join(stringx.Remove(deviceMetadataFieldNames, "`id`", "`create_at`", "`create_time`", "`created_at`", "`update_at`", "`update_time`", "`updated_at`"), ",")
-	deviceMetadataRowsWithPlaceHolder = strings.Join(stringx.Remove(deviceMetadataFieldNames, "`id`", "`create_at`", "`create_time`", "`created_at`", "`update_at`", "`update_time`", "`updated_at`"), "=?,") + "=?"
+	deviceMetadataFieldNames          = bson.M{"id": 1, "device_sn": 1, "param_type": 1, "param_value": 1, "create_time": 1, "update_time": 1}
+	deviceMetadataRows                = deviceMetadataFieldNames
+	deviceMetadataRowsExpectAutoSet   = bson.M{"device_sn": 1, "param_type": 1, "param_value": 1}
+	deviceMetadataRowsWithPlaceHolder = deviceMetadataRowsExpectAutoSet
 )
 
 type (
 	deviceMetadataModel interface {
-		Insert(ctx context.Context, data *DeviceMetadata) (sql.Result, error)
+		Insert(ctx context.Context, data *DeviceMetadata) (*mongo.InsertOneResult, error)
 		FindOne(ctx context.Context, id int64) (*DeviceMetadata, error)
 		FindByDeviceSn(ctx context.Context, deviceSn string) ([]*DeviceMetadata, error)
 		FindOneByDeviceSnParamType(ctx context.Context, deviceSn string, paramType int64) (*DeviceMetadata, error)
-		Update(ctx context.Context, data *DeviceMetadata) error
-		Upsert(ctx context.Context, data []*DeviceMetadata) (*BatchResult, error)
+		Update(ctx context.Context, data *DeviceMetadata) (*mongo.UpdateResult, error)
+		Upsert(ctx context.Context, data []*DeviceMetadata) (*BatchResult, error) 
 		Delete(ctx context.Context, id int64) error
 	}
 
 	defaultDeviceMetadataModel struct {
-		conn  sqlx.SqlConn
+		conn  *mongo.Client
 		table string
 	}
 
 	DeviceMetadata struct {
-		Id         int64          `db:"id"`
-		DeviceSn   string         `db:"device_sn"`   // device sn
-		ParamType  int64          `db:"param_type"`  // param type
-		ParamValue sql.NullString `db:"param_value"` // param value
-		CreateTime time.Time      `db:"create_time"` // create time
-		UpdateTime time.Time      `db:"update_time"` // update time
+		Id         int64     `bson:"id"`
+		DeviceSn   string    `bson:"device_sn"`   // device sn
+		ParamType  int64     `bson:"param_type"`  // param type
+		ParamValue string    `bson:"param_value"` // param value
+		CreateTime time.Time `bson:"create_time"` // create time
+		UpdateTime time.Time `bson:"update_time"` // update time
 	}
 )
 
-func newDeviceMetadataModel(conn sqlx.SqlConn) *defaultDeviceMetadataModel {
+func newDeviceMetadataModel(conn *mongo.Client) *defaultDeviceMetadataModel {
 	return &defaultDeviceMetadataModel{
 		conn:  conn,
-		table: "`device_metadata`",
+		table: "device_metadata",
 	}
 }
 
 func (m *defaultDeviceMetadataModel) Delete(ctx context.Context, id int64) error {
-	query := fmt.Sprintf("delete from %s where `id` = ?", m.table)
-	_, err := m.conn.ExecCtx(ctx, query, id)
-	return err
+	collection := m.conn.Database("test").Collection(m.table)
+	filter := bson.M{"id": id}
+	res, err := collection.DeleteOne(ctx, filter)
+	if err != nil {
+		return err
+	}
+	if res.DeletedCount == 0 {
+		return mongo.ErrNoDocuments
+	}
+	return nil
 }
 
 func (m *defaultDeviceMetadataModel) FindOne(ctx context.Context, id int64) (*DeviceMetadata, error) {
-	query := fmt.Sprintf("select %s from %s where `id` = ? limit 1", deviceMetadataRows, m.table)
-	var resp DeviceMetadata
-	err := m.conn.QueryRowCtx(ctx, &resp, query, id)
-	switch err {
-	case nil:
-		return &resp, nil
-	case sqlx.ErrNotFound:
-		return nil, ErrNotFound
-	default:
+	collection := m.conn.Database("test").Collection(m.table)
+	filter := bson.M{"id": id}
+	var result DeviceMetadata
+	err := collection.FindOne(ctx, filter).Decode(&result)
+	if err != nil {
 		return nil, err
 	}
+	return &result, nil
 }
 
 func (m *defaultDeviceMetadataModel) FindByDeviceSn(ctx context.Context, deviceSn string) ([]*DeviceMetadata, error) {
-	query := fmt.Sprintf("select %s from %s where `device_sn` = ?", deviceMetadataRows, m.table)
-	var resp []*DeviceMetadata
-	err := m.conn.QueryRowsCtx(ctx, &resp, query, deviceSn)
-	switch err {
-	case nil:
-		return resp, nil
-	case sqlx.ErrNotFound:
-		return nil, ErrNotFound
-	default:
+	collection := m.conn.Database("test").Collection(m.table)
+	filter := bson.M{"device_sn": deviceSn}
+	cursor, err := collection.Find(ctx, filter)
+	if err != nil {
 		return nil, err
 	}
+	var results []*DeviceMetadata
+	if err = cursor.All(ctx, &results); err != nil {
+		return nil, err
+	}
+	return results, nil
 }
 
 func (m *defaultDeviceMetadataModel) FindOneByDeviceSnParamType(ctx context.Context, deviceSn string, paramType int64) (*DeviceMetadata, error) {
-	var resp DeviceMetadata
-	query := fmt.Sprintf("select %s from %s where `device_sn` = ? and `param_type` = ? limit 1", deviceMetadataRows, m.table)
-	err := m.conn.QueryRowCtx(ctx, &resp, query, deviceSn, paramType)
-	switch err {
-	case nil:
-		return &resp, nil
-	case sqlx.ErrNotFound:
-		return nil, ErrNotFound
-	default:
+	collection := m.conn.Database("test").Collection(m.table)
+	filter := bson.M{"device_sn": deviceSn, "param_type": paramType}
+	var result DeviceMetadata
+	err := collection.FindOne(ctx, filter).Decode(&result)
+	if err != nil {
 		return nil, err
 	}
+	return &result, nil
 }
 
-func (m *defaultDeviceMetadataModel) Insert(ctx context.Context, data *DeviceMetadata) (sql.Result, error) {
-	query := fmt.Sprintf("insert into %s (%s) values (?, ?, ?)", m.table, deviceMetadataRowsExpectAutoSet)
-	ret, err := m.conn.ExecCtx(ctx, query, data.DeviceSn, data.ParamType, data.ParamValue)
-	return ret, err
+func (m *defaultDeviceMetadataModel) Insert(ctx context.Context, data *DeviceMetadata) (*mongo.InsertOneResult, error) {
+	collection := m.conn.Database("test").Collection(m.table)
+	res, err := collection.InsertOne(ctx, data)
+	if err != nil {
+		return nil, err
+	}
+	return res, nil
 }
 
-func (m *defaultDeviceMetadataModel) Update(ctx context.Context, newData *DeviceMetadata) error {
-	query := fmt.Sprintf("update %s set %s where `id` = ?", m.table, deviceMetadataRowsWithPlaceHolder)
-	_, err := m.conn.ExecCtx(ctx, query, newData.DeviceSn, newData.ParamType, newData.ParamValue, newData.Id)
-	return err
+func (m *defaultDeviceMetadataModel) Update(ctx context.Context, newData *DeviceMetadata) (*mongo.UpdateResult, error) {
+	collection := m.conn.Database("test").Collection(m.table)
+	filter := bson.M{"id": newData.Id}
+	update := bson.M{"$set": bson.M{"device_sn": newData.DeviceSn, "param_type": newData.ParamType, "param_value": newData.ParamValue}}
+	res, err := collection.UpdateOne(ctx, filter, update)
+	if err != nil {
+		return nil, err
+	}
+	return res, nil
 }
 
 const BatchSize = 1000
@@ -132,9 +138,6 @@ func (m *defaultDeviceMetadataModel) Upsert(ctx context.Context, data []*DeviceM
 
     result := &BatchResult{}
     
-    // Build base SQL statement
-    baseSQL := fmt.Sprintf("insert into %s (%s) values ", m.table, deviceMetadataRowsExpectAutoSet)
-    
     // Process data in batches
     for i := 0; i < len(data); i += BatchSize {
         end := i + BatchSize
@@ -145,33 +148,29 @@ func (m *defaultDeviceMetadataModel) Upsert(ctx context.Context, data []*DeviceM
         // Get current batch data
         batchData := data[i:end]
         
-        // Construct SQL statement
-        var builder strings.Builder
-        builder.WriteString(baseSQL)
+        // Execute current batch within a transaction
+        session, err := m.conn.StartSession()
+        if err != nil {
+            return nil, err
+        }
+        session.StartTransaction()
+        defer session.EndSession(ctx)
         
-        // Build parameter placeholders and values array
-        values := make([]interface{}, 0, len(batchData)*3)
-        for j := 0; j < len(batchData); j++ {
-            if j > 0 {
-                builder.WriteString(",")
+        for _, item := range batchData {
+            filter := bson.M{"device_sn": item.DeviceSn, "param_type": item.ParamType}
+            update := bson.M{"$set": bson.M{"param_value": item.ParamValue}}
+            _, err := m.conn.Database("test").Collection(m.table).UpdateOne(ctx, filter, update, options.Update().SetUpsert(true))
+            if err != nil {
+                session.AbortTransaction(ctx)
+                result.FailedBatch = append(result.FailedBatch, i/BatchSize)
+                result.Err = err
+                return result, err
             }
-            builder.WriteString("(?,?,?)")
-            values = append(values, batchData[j].DeviceSn, batchData[j].ParamType, batchData[j].ParamValue)
         }
         
-        // Append on duplicate key update clause
-        builder.WriteString(" on duplicate key update `param_value` = VALUES(`param_value`)")
-        
-        // Execute current batch within a transaction
-        err := m.conn.TransactCtx(ctx, func(ctx context.Context, session sqlx.Session) error {
-            _, err := session.Exec(builder.String(), values...)
-            return err
-        })
-        
+        err = session.CommitTransaction(ctx)
         if err != nil {
-            result.FailedBatch = append(result.FailedBatch, i/BatchSize)
-            result.Err = err
-            return result, err
+            return nil, err
         }
         
         result.SuccessCount += len(batchData)

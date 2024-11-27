@@ -1,6 +1,8 @@
 package model
 
-import "github.com/zeromicro/go-zero/core/stores/sqlx"
+import (
+	"go.mongodb.org/mongo-driver/mongo"
+)
 
 var _ DeviceSweeperDataModel = (*customDeviceSweeperDataModel)(nil)
 
@@ -9,7 +11,7 @@ type (
 	// and implement the added methods in customDeviceSweeperDataModel.
 	DeviceSweeperDataModel interface {
 		deviceSweeperDataModel
-		withSession(session sqlx.Session) DeviceSweeperDataModel
+		// Removed withSession as MongoDB handles sessions differently
 	}
 
 	customDeviceSweeperDataModel struct {
@@ -17,13 +19,10 @@ type (
 	}
 )
 
-// NewDeviceSweeperDataModel returns a model for the database table.
-func NewDeviceSweeperDataModel(conn sqlx.SqlConn) DeviceSweeperDataModel {
+// NewDeviceSweeperDataModel returns a model for the MongoDB collection.
+func NewDeviceSweeperDataModel(client *mongo.Client) DeviceSweeperDataModel {
 	return &customDeviceSweeperDataModel{
-		defaultDeviceSweeperDataModel: newDeviceSweeperDataModel(conn),
+		defaultDeviceSweeperDataModel: newDeviceSweeperDataModel(client),
 	}
 }
 
-func (m *customDeviceSweeperDataModel) withSession(session sqlx.Session) DeviceSweeperDataModel {
-	return NewDeviceSweeperDataModel(sqlx.NewSqlConnFromSession(session))
-}

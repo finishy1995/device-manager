@@ -6,169 +6,123 @@ package model
 
 import (
 	"context"
-	"database/sql"
-	"fmt"
-	"strings"
 
-	"github.com/zeromicro/go-zero/core/stores/builder"
-	"github.com/zeromicro/go-zero/core/stores/sqlx"
-	"github.com/zeromicro/go-zero/core/stringx"
-)
-
-var (
-	deviceSweeperDataFieldNames          = builder.RawFieldNames(&DeviceSweeperData{})
-	deviceSweeperDataRows                = strings.Join(deviceSweeperDataFieldNames, ",")
-	deviceSweeperDataRowsExpectAutoSet   = strings.Join(stringx.Remove(deviceSweeperDataFieldNames, "`id`", "`create_at`", "`create_time`", "`created_at`", "`update_at`", "`update_time`", "`updated_at`"), ",")
-	deviceSweeperDataRowsWithPlaceHolder = strings.Join(stringx.Remove(deviceSweeperDataFieldNames, "`id`", "`create_at`", "`create_time`", "`created_at`", "`update_at`", "`update_time`", "`updated_at`"), "=?,") + "=?"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type (
 	deviceSweeperDataModel interface {
-		Insert(ctx context.Context, data *DeviceSweeperData) (sql.Result, error)
+		Insert(ctx context.Context, data *DeviceSweeperData) (*mongo.InsertOneResult, error)
 		FindOne(ctx context.Context, id int64) (*DeviceSweeperData, error)
 		FindOneByDeviceSnTimestamp(ctx context.Context, deviceSn string, timestamp int64) (*DeviceSweeperData, error)
 		FindByDeviceSnTimeRange(ctx context.Context, deviceSn string, startTimestamp int64, endTimestamp int64) ([]*DeviceSweeperData, error)
-		Update(ctx context.Context, data *DeviceSweeperData) error
+		Update(ctx context.Context, data *DeviceSweeperData) (*mongo.UpdateResult, error)
 		Upsert(ctx context.Context, data []*DeviceSweeperData) (*BatchResult, error)
-		Delete(ctx context.Context, id int64) error
+		Delete(ctx context.Context, id int64)  error
 	}
 
 	defaultDeviceSweeperDataModel struct {
-		conn  sqlx.SqlConn
+		conn  *mongo.Client
 		table string
 	}
 
 	DeviceSweeperData struct {
-		Id           int64   `db:"id"`
-		DeviceSn     string  `db:"device_sn"`
-		Timestamp    int64   `db:"timestamp"`
-		IsCharging   int64   `db:"is_charging"`
-		BatteryLevel uint64  `db:"battery_level"`
-		PositionX    float64 `db:"position_x"`
-		PositionY    float64 `db:"position_y"`
+		Id           int64   `bson:"id"`
+		DeviceSn     string  `bson:"device_sn"`
+		Timestamp    int64   `bson:"timestamp"`
+		IsCharging   int64   `bson:"is_charging"`
+		BatteryLevel uint64  `bson:"battery_level"`
+		PositionX    float64 `bson:"position_x"`
+		PositionY    float64 `bson:"position_y"`
 	}
 )
 
-func newDeviceSweeperDataModel(conn sqlx.SqlConn) *defaultDeviceSweeperDataModel {
+func newDeviceSweeperDataModel(conn *mongo.Client) *defaultDeviceSweeperDataModel {
 	return &defaultDeviceSweeperDataModel{
 		conn:  conn,
-		table: "`device_sweeper_data`",
+		table: "device_sweeper_data",
 	}
 }
 
-func (m *defaultDeviceSweeperDataModel) Delete(ctx context.Context, id int64) error {
-	query := fmt.Sprintf("delete from %s where `id` = ?", m.table)
-	_, err := m.conn.ExecCtx(ctx, query, id)
-	return err
+func (m *defaultDeviceSweeperDataModel) Delete(ctx context.Context, id int64)  error {
+	filter := bson.M{"id": id}
+	_, err := m.conn.Database("test").Collection(m.table).DeleteOne(ctx, filter)
+	return  err
 }
 
 func (m *defaultDeviceSweeperDataModel) FindOne(ctx context.Context, id int64) (*DeviceSweeperData, error) {
-	query := fmt.Sprintf("select %s from %s where `id` = ? limit 1", deviceSweeperDataRows, m.table)
+	filter := bson.M{"id": id}
 	var resp DeviceSweeperData
-	err := m.conn.QueryRowCtx(ctx, &resp, query, id)
-	switch err {
-	case nil:
-		return &resp, nil
-	case sqlx.ErrNotFound:
-		return nil, ErrNotFound
-	default:
+	err := m.conn.Database("test").Collection(m.table).FindOne(ctx, filter).Decode(&resp)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return nil, ErrNotFound
+		}
 		return nil, err
 	}
+	return &resp, nil
 }
 
 func (m *defaultDeviceSweeperDataModel) FindOneByDeviceSnTimestamp(ctx context.Context, deviceSn string, timestamp int64) (*DeviceSweeperData, error) {
+	filter := bson.M{"device_sn": deviceSn, "timestamp": timestamp}
 	var resp DeviceSweeperData
-	query := fmt.Sprintf("select %s from %s where `device_sn` = ? and `timestamp` = ? limit 1", deviceSweeperDataRows, m.table)
-	err := m.conn.QueryRowCtx(ctx, &resp, query, deviceSn, timestamp)
-	switch err {
-	case nil:
-		return &resp, nil
-	case sqlx.ErrNotFound:
-		return nil, ErrNotFound
-	default:
+	err := m.conn.Database("test").Collection(m.table).FindOne(ctx, filter).Decode(&resp)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return nil, ErrNotFound
+		}
 		return nil, err
 	}
+	return &resp, nil
 }
 
 func (m *defaultDeviceSweeperDataModel) FindByDeviceSnTimeRange(ctx context.Context, deviceSn string, startTimestamp int64, endTimestamp int64) ([]*DeviceSweeperData, error) {
-	query := fmt.Sprintf("select %s from %s where `device_sn` = ? and `timestamp` >= ? and `timestamp` <= ?", deviceSweeperDataRows, m.table)
-	var resp []*DeviceSweeperData
-	err := m.conn.QueryRowsCtx(ctx, &resp, query, deviceSn, startTimestamp, endTimestamp)
-	switch err {
-	case nil:
-		return resp, nil
-	case sqlx.ErrNotFound:
-		return nil, ErrNotFound
-	default:
+	filter := bson.M{"device_sn": deviceSn, "timestamp": bson.M{"$gte": startTimestamp, "$lte": endTimestamp}}
+	cursor, err := m.conn.Database("test").Collection(m.table).Find(ctx, filter)
+	if err != nil {
 		return nil, err
 	}
+	var results []*DeviceSweeperData
+	if err = cursor.All(ctx, &results); err != nil {
+		return nil, err
+	}
+	return results, nil
 }
 
-func (m *defaultDeviceSweeperDataModel) Insert(ctx context.Context, data *DeviceSweeperData) (sql.Result, error) {
-	query := fmt.Sprintf("insert into %s (%s) values (?, ?, ?, ?, ?, ?)", m.table, deviceSweeperDataRowsExpectAutoSet)
-	ret, err := m.conn.ExecCtx(ctx, query, data.DeviceSn, data.Timestamp, data.IsCharging, data.BatteryLevel, data.PositionX, data.PositionY)
-	return ret, err
+func (m *defaultDeviceSweeperDataModel) Insert(ctx context.Context, data *DeviceSweeperData) (*mongo.InsertOneResult, error) {
+	res, err := m.conn.Database("test").Collection(m.table).InsertOne(ctx, data)
+	return res, err
 }
 
-func (m *defaultDeviceSweeperDataModel) Update(ctx context.Context, newData *DeviceSweeperData) error {
-	query := fmt.Sprintf("update %s set %s where `id` = ?", m.table, deviceSweeperDataRowsWithPlaceHolder)
-	_, err := m.conn.ExecCtx(ctx, query, newData.DeviceSn, newData.Timestamp, newData.IsCharging, newData.BatteryLevel, newData.PositionX, newData.PositionY, newData.Id)
-	return err
+func (m *defaultDeviceSweeperDataModel) Update(ctx context.Context, newData *DeviceSweeperData) (*mongo.UpdateResult, error) {
+	filter := bson.M{"id": newData.Id}
+	update := bson.M{"$set": newData}
+	res, err := m.conn.Database("test").Collection(m.table).UpdateOne(ctx, filter, update)
+	return res, err
 }
 
 func (m *defaultDeviceSweeperDataModel) Upsert(ctx context.Context, data []*DeviceSweeperData) (*BatchResult, error) {
-    if len(data) == 0 {
-        return &BatchResult{}, nil
-    }
+	if len(data) == 0 {
+		return &BatchResult{}, nil
+	}
 
-    result := &BatchResult{}
-    
-    // Build base SQL statement
-	baseSQL := fmt.Sprintf("insert into %s (%s) values ", m.table, deviceSweeperDataRowsExpectAutoSet)
-    
-    // Process data in batches
-    for i := 0; i < len(data); i += BatchSize {
-        end := i + BatchSize
-        if end > len(data) {
-            end = len(data)
-        }
-        
-        // Get current batch data
-        batchData := data[i:end]
-        
-        // Construct SQL statement
-        var builder strings.Builder
-        builder.WriteString(baseSQL)
-        
-        // Build parameter placeholders and values array
-        values := make([]interface{}, 0, len(batchData)*3)
-        for j := 0; j < len(batchData); j++ {
-			if j != 0 {
-				builder.WriteString(", ")
-			}
-			builder.WriteString("(?, ?, ?, ?, ?, ?)")
-			values = append(values, batchData[j].DeviceSn, batchData[j].Timestamp, batchData[j].IsCharging, batchData[j].BatteryLevel, batchData[j].PositionX, batchData[j].PositionY)
-        }
-        
-        // Append on duplicate key update clause
-		builder.WriteString(" on duplicate key update `device_sn` = values(`device_sn`), `timestamp` = values(`timestamp`), `is_charging` = values(`is_charging`), `battery_level` = values(`battery_level`), `position_x` = values(`position_x`), `position_y` = values(`position_y`)")
+	result := &BatchResult{}
 
-		// Execute current batch within a transaction
-        err := m.conn.TransactCtx(ctx, func(ctx context.Context, session sqlx.Session) error {
-            _, err := session.Exec(builder.String(), values...)
-            return err
-        })
-        
-        if err != nil {
-            result.FailedBatch = append(result.FailedBatch, i/BatchSize)
-            result.Err = err
-            return result, err
-        }
-        
-        result.SuccessCount += len(batchData)
-    }
-    
-    return result, nil
+	for _, item := range data {
+		filter := bson.M{"id": item.Id}
+		update := bson.M{"$set": item}
+		_, err := m.conn.Database("test").Collection(m.table).UpdateOne(ctx, filter, update, options.Update().SetUpsert(true))
+		if err != nil {
+			//result.FailedBatch = append(result.FailedBatch, item.Id)
+			result.Err = err
+			return result, err
+		}
+		result.SuccessCount++
+	}
+
+	return result, nil
 }
 
 func (m *defaultDeviceSweeperDataModel) tableName() string {

@@ -2,18 +2,18 @@ package logic
 
 import (
 	"context"
-	"database/sql"
 	"finishy1995/device-manager/enhanced/model"
 	"fmt"
 	"math/rand"
 	"sync"
 	"time"
 
-	"github.com/zeromicro/go-zero/core/stores/sqlx"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 var (
-	// 任务队列
+	// Task queue
 	taskList = map[int32]*task{}
 )
 
@@ -50,6 +50,15 @@ func (t *task) Run(dataSource string) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(t.seconds)*time.Second)
 	defer cancel()
 
+	// Connect to MongoDB
+	clientOptions := options.Client().ApplyURI(dataSource)
+	client, err := mongo.Connect(ctx, clientOptions)
+	if err != nil {
+		fmt.Println("Failed to connect to MongoDB:", err)
+		return
+	}
+	defer client.Disconnect(ctx)
+
 	// WaitGroup to wait for all goroutines
 	var wg sync.WaitGroup
 	wg.Add(int(t.thread))
@@ -69,7 +78,7 @@ func (t *task) Run(dataSource string) {
 		}
 		go func(start, end int32) {
 			defer wg.Done()
-			model := model.NewDeviceMetadataModel(sqlx.NewMysql(dataSource))
+			model := model.NewDeviceMetadataModel(client)
 
 			// Run until context is done
 			for {
@@ -79,14 +88,15 @@ func (t *task) Run(dataSource string) {
 				default:
 					data := generateDemoMetadataByDeviceRange(start, end, t.deviceParamNumber, BatchSize)
 					start := time.Now()
-					result, err := model.Upsert(ctx, data)
+					//result, err := model.Upsert(ctx, data)
+					_, err := model.Upsert(ctx, data)
 					end := time.Now()
 					if err != nil {
 						fmt.Println("Upsert failed:", err)
 						continue
 					}
 					t.latencyMicroseconds += end.Sub(start).Microseconds()
-					t.successDeviceCount += int32(result.SuccessCount) / t.deviceParamNumber
+					//t.successDeviceCount += int32(result.ModifiedCount) / t.deviceParamNumber
 				}
 			}
 		}(startDevice, endDevice)
@@ -105,7 +115,7 @@ func generateDemoMetadata(deviceNumber int32, deviceParamNumber int32) []*model.
 			mark := i%2 + 1
 			data.DeviceSn = fmt.Sprintf("SN-%d%011d", mark, i)
 			data.ParamType = int64(j)
-			data.ParamValue = sql.NullString{String: fmt.Sprintf("%05d", rand.Intn(90000)+10000), Valid: true}
+			data.ParamValue = fmt.Sprintf("%05d", rand.Intn(90000)+10000)
 			result = append(result, data)
 		}
 	}
@@ -124,9 +134,10 @@ func generateDemoMetadataByDeviceRange(startDevice, endDevice int32, deviceParam
 			// Generate device SN
 			data.DeviceSn = fmt.Sprintf("SN-%d%011d", mark, randomDevice)
 			data.ParamType = int64(j)
-			data.ParamValue = sql.NullString{String: fmt.Sprintf("%05d", rand.Intn(90000)+10000), Valid: true}
+			data.ParamValue = fmt.Sprintf("%05d", rand.Intn(90000)+10000)
 			result = append(result, data)
 		}
 	}
 	return result
 }
+

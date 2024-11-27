@@ -1,5 +1,5 @@
 package model
 
-import "github.com/zeromicro/go-zero/core/stores/sqlx"
+import "go.mongodb.org/mongo-driver/mongo"
 
-var ErrNotFound = sqlx.ErrNotFound
+var ErrNotFound = mongo.ErrNoDocuments
