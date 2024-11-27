@@ -1,8 +1,6 @@
 module finishy1995/device-manager
 
-go 1.21
-
-toolchain go1.23.3
+go 1.20
 
 require (
 	github.com/zeromicro/go-zero v1.7.3
