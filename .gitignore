@@ -43,3 +43,6 @@ dist/
 
 # Go workspace file
 go.work
+
+# Code convert trace
+*/trace/
