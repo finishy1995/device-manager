@@ -36,6 +36,7 @@ config.local.yml
 # Temporary files
 tmp/
 temp/
+target/trace
 
 # Generated files
 bin/
