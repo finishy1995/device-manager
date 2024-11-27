@@ -9,6 +9,8 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"time"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 type (
 	deviceCameraDataModel interface {
@@ -41,7 +43,7 @@ type (
 func newDeviceCameraDataModel(conn *mongo.Client) *defaultDeviceCameraDataModel {
 	return &defaultDeviceCameraDataModel{
 		conn:  conn,
-		table: "device_camera_data",
+		table: "device_data",
 	}
 }
 
@@ -102,34 +104,55 @@ func (m *defaultDeviceCameraDataModel) Update(ctx context.Context, newData *Devi
 	return result, err
 }
 
-func (m *defaultDeviceCameraDataModel) Upsert(ctx context.Context, data []*DeviceCameraData)  (*BatchResult, error) {
+
+
+func (m *defaultDeviceCameraDataModel) Upsert(ctx context.Context, data []*DeviceCameraData) (*BatchResult, error) {
 	if len(data) == 0 {
 		return &BatchResult{}, nil
 	}
-
 	result := &BatchResult{}
 	collection := m.conn.Database("test").Collection(m.table)
-	for _, item := range data {
-		filter := bson.D{{"id", item.Id}}
-		update := bson.D{{"$set", bson.D{{"device_sn", item.DeviceSn}, {"timestamp", item.Timestamp}, {"is_fixed", item.IsFixed}, {"battery_level", item.BatteryLevel}, {"rotation_x", item.RotationX}, {"rotation_y", item.RotationY}, {"rotation_z", item.RotationZ}}}}
-		upsert := true
-		options := options.Update().SetUpsert(upsert)
-		_, err := collection.UpdateOne(ctx, filter, update, options)
-                if err != nil {
-		    //session.AbortTransaction(ctx)
-		    //result.FailedBatch = append(result.FailedBatch, i/BatchSize)
-                    result.Err = err
-                    return result, err
+	// Process data in batches
+	for i := 0; i < len(data); i += BatchSize {
+		end := i + BatchSize
+		if end > len(data) {
+			end = len(data)
 		}
-	}
-	/*
-        err = session.CommitTransaction(ctx)
-        if err != nil {
-            return nil, err
-        }
-	*/
+		// Get current batch data
+		batchData := data[i:end]
+		// Prepare bulk write operations
+		var operations []mongo.WriteModel
+		for _, item := range batchData {
+			//filter := bson.D{{"id", item.Id}}
+			t := time.Unix(item.Timestamp, 0)
+                        // Convert time.Time to BSON UTC time (primitive.DateTime)
+                        bsonDateTime := primitive.NewDateTimeFromTime(t)
 
-        result.SuccessCount  = 1
+			update := bson.D{
+				{"id", item.Id},
+				{"device_sn", item.DeviceSn},
+				{"timestamp", bsonDateTime},
+				{"is_fixed", item.IsFixed},
+				{"battery_level", item.BatteryLevel},
+				{"rotation_x", item.RotationX},
+				{"rotation_y", item.RotationY},
+				{"rotation_z", item.RotationZ},
+			}
+			//upsert := true
+			//model := mongo.NewUpdateOneModel().SetFilter(filter).SetUpdate(update).SetUpsert(upsert)
+			model := mongo.NewInsertOneModel().SetDocument(update)
+			operations = append(operations, model)
+		}
+		// Execute bulk write
+		bulkOptions := options.BulkWrite().SetOrdered(false)
+		bulkResult, err := collection.BulkWrite(ctx, operations, bulkOptions)
+		if err != nil {
+			result.FailedBatch = append(result.FailedBatch, i/BatchSize)
+			result.Err = err
+			continue
+		}
+		result.SuccessCount += int(bulkResult.ModifiedCount + bulkResult.UpsertedCount)
+	}
 	return result, nil
 }
 

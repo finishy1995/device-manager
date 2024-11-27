@@ -5,9 +5,14 @@ import (
 	"finishy1995/device-manager/enhanced/model"
 	"finishy1995/device-manager/enhanced/processor/processorclient"
 
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
+	"context"
+	"fmt"
+	"log"
 	"github.com/zeromicro/go-zero/core/discov"
-	"github.com/zeromicro/go-zero/core/stores/sqlx"
 	"github.com/zeromicro/go-zero/zrpc"
+
 )
 
 type ServiceContext struct {
@@ -19,18 +24,32 @@ type ServiceContext struct {
 }
 
 func NewServiceContext(c config.Config) *ServiceContext {
-	conn := sqlx.NewMysql(c.DataSource)
+		// Set client options
+	clientOptions := options.Client().ApplyURI(c.DataSource)
+
+	// Connect to MongoDB
+	client, err := mongo.Connect(context.TODO(), clientOptions)
+	if err != nil {
+		log.Fatal(fmt.Sprintf("Failed to connect to MongoDB: %v", err))
+	}
+
+	// Check the connection
+	err = client.Ping(context.TODO(), nil)
+	if err != nil {
+		log.Fatal(fmt.Sprintf("Failed to ping MongoDB: %v", err))
+	}
 	rpcConn := zrpc.MustNewClient(zrpc.RpcClientConf{
 		Etcd: discov.EtcdConf{
 			Hosts: []string{c.Etcd},
 			Key:   c.Processor,
 		},
 	})
+
 	return &ServiceContext{
 		Config:                 c,
-		DeviceMetadataModel:    model.NewDeviceMetadataModel(conn),
-		DeviceCameraDataModel:  model.NewDeviceCameraDataModel(conn),
-		DeviceSweeperDataModel: model.NewDeviceSweeperDataModel(conn),
+		DeviceMetadataModel:    model.NewDeviceMetadataModel(client),
+		DeviceCameraDataModel:  model.NewDeviceCameraDataModel(client),
+		DeviceSweeperDataModel: model.NewDeviceSweeperDataModel(client),
 		Processor:              processorclient.NewProcessor(rpcConn),
 	}
 }

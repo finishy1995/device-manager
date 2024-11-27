@@ -6,10 +6,11 @@ package model
 
 import (
 	"context"
-
+        "time"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type (
@@ -42,7 +43,7 @@ type (
 func newDeviceSweeperDataModel(conn *mongo.Client) *defaultDeviceSweeperDataModel {
 	return &defaultDeviceSweeperDataModel{
 		conn:  conn,
-		table: "device_sweeper_data",
+		table: "device_data",
 	}
 }
 
@@ -103,25 +104,51 @@ func (m *defaultDeviceSweeperDataModel) Update(ctx context.Context, newData *Dev
 	return res, err
 }
 
+
 func (m *defaultDeviceSweeperDataModel) Upsert(ctx context.Context, data []*DeviceSweeperData) (*BatchResult, error) {
 	if len(data) == 0 {
 		return &BatchResult{}, nil
 	}
-
 	result := &BatchResult{}
-
-	for _, item := range data {
-		filter := bson.M{"id": item.Id}
-		update := bson.M{"$set": item}
-		_, err := m.conn.Database("test").Collection(m.table).UpdateOne(ctx, filter, update, options.Update().SetUpsert(true))
-		if err != nil {
-			//result.FailedBatch = append(result.FailedBatch, item.Id)
-			result.Err = err
-			return result, err
+	collection := m.conn.Database("test").Collection(m.table)
+	// Process data in batches
+	for i := 0; i < len(data); i += BatchSize {
+		end := i + BatchSize
+		if end > len(data) {
+			end = len(data)
 		}
-		result.SuccessCount++
+		// Get current batch data
+		batchData := data[i:end]
+		// Prepare bulk write operations
+		var operations []mongo.WriteModel
+		for _, item := range batchData {
+			//filter := bson.M{"id": item.Id}
+			t := time.Unix(item.Timestamp, 0)
+                        // Convert time.Time to BSON UTC time (primitive.DateTime)
+                        bsonDateTime := primitive.NewDateTimeFromTime(t)
+			update := bson.M{
+				"id":            item.Id,
+				"device_sn":     item.DeviceSn,
+				"timestamp":     bsonDateTime,
+				"is_charging":   item.IsCharging,
+				"battery_level": item.BatteryLevel,
+				"position_x":    item.PositionX,
+				"position_y":    item.PositionY,
+			}
+			//model := mongo.NewUpdateOneModel().SetFilter(filter).SetUpdate(update).SetUpsert(true)
+			model := mongo.NewInsertOneModel().SetDocument(update)
+			operations = append(operations, model)
+		}
+		// Execute bulk write
+		bulkOptions := options.BulkWrite().SetOrdered(false)
+		bulkResult, err := collection.BulkWrite(ctx, operations, bulkOptions)
+		if err != nil {
+			result.FailedBatch = append(result.FailedBatch, i/BatchSize)
+			result.Err = err
+			continue
+		}
+		result.SuccessCount += int(bulkResult.ModifiedCount + bulkResult.UpsertedCount)
 	}
-
 	return result, nil
 }
 
