@@ -7,11 +7,15 @@ trigger:
  branch:
  - main
 
+environment:
+  MONGO:
+    from_secret: mongodb
+
 steps:
 - name: publish
   image: plugins/kaniko-ecr
   environment:
-    DB_CONNECTION_STRING:
+    MONGODB:
       from_secret: mongodb
   settings:
     create_repository: true
@@ -27,7 +31,7 @@ steps:
     secret_key:
       from_secret: ecr_secret_key
     build_args:
-      - DB_CONNECTION_STRING=$DB_CONNECTION_STRING
+      - DB_CONNECTION_STRING=${MONGO}
   when:
     event:
     - push
