@@ -5,14 +5,14 @@ import (
 	"finishy1995/device-manager/enhanced/model"
 	"finishy1995/device-manager/enhanced/processor/processorclient"
 
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
 	"context"
 	"fmt"
 	"log"
+
 	"github.com/zeromicro/go-zero/core/discov"
 	"github.com/zeromicro/go-zero/zrpc"
-
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type ServiceContext struct {
@@ -21,10 +21,11 @@ type ServiceContext struct {
 	DeviceCameraDataModel  model.DeviceCameraDataModel
 	DeviceSweeperDataModel model.DeviceSweeperDataModel
 	Processor              processorclient.Processor
+	MongoClient            *mongo.Client
 }
 
 func NewServiceContext(c config.Config) *ServiceContext {
-		// Set client options
+	// Set client options
 	clientOptions := options.Client().ApplyURI(c.DataSource)
 
 	// Connect to MongoDB
@@ -51,5 +52,6 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		DeviceCameraDataModel:  model.NewDeviceCameraDataModel(client),
 		DeviceSweeperDataModel: model.NewDeviceSweeperDataModel(client),
 		Processor:              processorclient.NewProcessor(rpcConn),
+		MongoClient:            client,
 	}
 }

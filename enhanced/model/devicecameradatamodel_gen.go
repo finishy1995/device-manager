@@ -31,7 +31,7 @@ type (
 	DeviceCameraData struct {
 		Id           int64   `bson:"id"`
 		DeviceSn     string  `bson:"device_sn"`
-		Timestamp    int64   `bson:"timestamp"`
+		Timestamp    time.Time   `bson:"timestamp"`
 		IsFixed      int64   `bson:"is_fixed"`
 		BatteryLevel uint64  `bson:"battery_level"`
 		RotationX    float64 `bson:"rotation_x"`
@@ -78,7 +78,11 @@ func (m *defaultDeviceCameraDataModel) FindOneByDeviceSnTimestamp(ctx context.Co
 
 func (m *defaultDeviceCameraDataModel) FindByDeviceSnTimeRange(ctx context.Context, deviceSn string, startTimestamp int64, endTimestamp int64) ([]*DeviceCameraData, error) {
 	collection := m.conn.Database("test").Collection(m.table)
-	filter := bson.D{{"device_sn", deviceSn}, {"timestamp", bson.D{{"$gte", startTimestamp}, {"$lte", endTimestamp}}}}
+	t := time.Unix(startTimestamp, 0)
+	startTime := primitive.NewDateTimeFromTime(t)
+	t = time.Unix(endTimestamp, 0)
+	endTime := primitive.NewDateTimeFromTime(t)
+	filter := bson.D{{"device_sn", deviceSn}, {"timestamp", bson.D{{"$gte", startTime}, {"$lte", endTime}}}}
 	cursor, err := collection.Find(ctx, filter)
 	if err != nil {
 		return nil, err
@@ -123,10 +127,7 @@ func (m *defaultDeviceCameraDataModel) Upsert(ctx context.Context, data []*Devic
 		// Prepare bulk write operations
 		var operations []mongo.WriteModel
 		for _, item := range batchData {
-			//filter := bson.D{{"id", item.Id}}
-			t := time.Unix(item.Timestamp, 0)
-                        // Convert time.Time to BSON UTC time (primitive.DateTime)
-                        bsonDateTime := primitive.NewDateTimeFromTime(t)
+            bsonDateTime := primitive.NewDateTimeFromTime(item.Timestamp)
 
 			update := bson.D{
 				{"id", item.Id},
