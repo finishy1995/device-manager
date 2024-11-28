@@ -22,7 +22,6 @@ def get_metadata():
         # Call the backend API
         response = requests.get(f"{BASE_URL}/metadata", params={"sn": sn})
         return jsonify(response.json())
-
     # Render the form page
     return render_template("form_pages/get_metadata.html")
 
