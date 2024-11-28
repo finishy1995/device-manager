@@ -18,6 +18,7 @@ COPY enhanced/processor/etc /app/processor/etc
 
 # 替换数据库连接字符串
 ARG DB_CONNECTION_STRING="mongodb://root:password@mongodb-host"
+RUN echo ${DB_CONNECTION_STRING}
 RUN sed -i 's|DataSource:.*|DataSource: "'${DB_CONNECTION_STRING}'"|' /app/processor/etc/processor.yaml
 
 RUN go mod tidy

@@ -10,8 +10,8 @@ type GetMetadataResponse {
 }
 
 type UpdateMetadataRequest {
-	SN     string            `json:"sn"`
-	Params map[string]string `json:"params"`
+	SN     string            `form:"sn"`
+	Params map[string]string `form:"params"`
 }
 
 type UpdateMetadataResponse {
@@ -39,10 +39,10 @@ type GenerateDemoMetadataResp {
 }
 
 type UpdateMetadataReq {
-	DeviceNumber      int `json:"device_number"`
-	DeviceParamNumber int `json:"device_param_number"`
-	Thread            int `json:"thread"`
-	Seconds           int `json:"seconds"`
+	DeviceNumber      int `form:"device_number"`
+	DeviceParamNumber int `form:"device_param_number"`
+	Thread            int `form:"thread"`
+	Seconds           int `form:"seconds"`
 }
 
 type UpdateMetadataResp {
@@ -97,7 +97,7 @@ service http-api {
 	get /metadata (GetMetadataRequest) returns (GetMetadataResponse) // Get metadata by SN
 
 	@handler UpdateMetadataHandler
-	post /metadata (UpdateMetadataRequest) returns (UpdateMetadataResponse) // Update metadata by SN
+	get /metadata/update (UpdateMetadataRequest) returns (UpdateMetadataResponse) // Update metadata by SN
 
 	@handler GetMetricsHandler
 	get /metrics (GetMetricsRequest) returns (GetMetricsResponse) // Get device metrics
@@ -106,7 +106,7 @@ service http-api {
 	get /generate/metadata (GenerateDemoMetadataReq) returns (GenerateDemoMetadataResp) // DEMO use
 
 	@handler RandomUpdateMetadataHandler
-	post /update/metadata (UpdateMetadataReq) returns (UpdateMetadataResp) // Benchmark use
+	get /update/metadata (UpdateMetadataReq) returns (UpdateMetadataResp) // Benchmark use
 
 	@handler GetRandomUpdateResultHandler
 	get /update/result (GetUpdateResultReq) returns (GetUpdateResultResp) // Benchmark use

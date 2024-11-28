@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>Get Metadata</h2>
+<form method="POST" action="/get_metadata">
+    <div class="mb-3">
+        <label for="sn" class="form-label">SN</label>
+        <input type="text" class="form-control" id="sn" name="sn" required>
+    </div>
+    <button type="submit" class="btn btn-primary">Submit</button>
+</form>
+{% endblock %}
