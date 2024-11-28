@@ -27,7 +27,7 @@ steps:
     secret_key:
       from_secret: ecr_secret_key
     build_args:
-      - DB_CONNECTION_STRING=${DB_CONNECTION_STRING}
+      - DB_CONNECTION_STRING=$DB_CONNECTION_STRING
   when:
     event:
     - push
