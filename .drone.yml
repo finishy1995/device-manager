@@ -7,10 +7,6 @@ trigger:
  branch:
  - main
 
-environment:
-  MONGO:
-    from_secret: mongodb
-
 steps:
 - name: publish
   image: plugins/kaniko-ecr
