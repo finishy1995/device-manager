@@ -17,8 +17,10 @@ COPY enhanced enhanced
 COPY enhanced/processor/etc /app/processor/etc
 
 # 替换数据库连接字符串
-ARG DB_CONNECTION_STRING="mongodb://root:password@mongodb-host"
+ARG DB_CONNECTION_STRING
 RUN echo ${DB_CONNECTION_STRING}
+# 检查 DB_CONNECTION_STRING 是否为空，如果为空则退出并返回非零状态码
+RUN if [ -z "$DB_CONNECTION_STRING" ]; then echo "Error: DB_CONNECTION_STRING is not set" && exit 1; fi
 RUN sed -i 's|DataSource:.*|DataSource: "'${DB_CONNECTION_STRING}'"|' /app/processor/etc/processor.yaml
 
 RUN go mod tidy

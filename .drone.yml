@@ -27,7 +27,7 @@ steps:
     secret_key:
       from_secret: ecr_secret_key
     build_args:
-      - DB_CONNECTION_STRING=mongodb+srv://hackathon:Hackathon1127@deviceiot.sfpia.mongodb.net
+      from_secret: mongodb_args
   when:
     event:
     - push
