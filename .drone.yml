@@ -11,11 +11,8 @@ steps:
 - name: publish
   image: plugins/kaniko-ecr
   environment:
-    MONGODB:
-      from_secret: mongodb
-  secrets:
-    - source: MONGODB_ARGS
-      target: plugin_build_args
+    BUILD_ARGS:
+      from_secret: MONGODB_ARGS
   settings:
     create_repository: true
     registry: 795250896452.dkr.ecr.us-east-1.amazonaws.com
@@ -29,8 +26,8 @@ steps:
       from_secret: ecr_access_key
     secret_key:
       from_secret: ecr_secret_key
-    # build_args:
-    #   - DB_CONNECTION_STRING=mongodb+srv://hackathon:Hackathon1127@deviceiot.sfpia.mongodb.net
+    build_args:
+      - BUILD_ARGS
   when:
     event:
     - push

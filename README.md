@@ -184,17 +184,20 @@ The service has deployed on kanopy, use  the demo url below to call the service 
 
 Get device metadata
 https://device-manager.sa-demo.staging.corp.mongodb.com/metadata?sn=SN-100000000038
+
 Get device metrics
 https://device-manager.sa-demo.staging.corp.mongodb.com/metrics?sn=SN-100000000038&start_time=1732438800&end_time=1732439400
+
 Generate device data
 https://device-manager.sa-demo.staging.corp.mongodb.com/generate/devicedata?device_number=10&start_time=1732438800&end_time=1732439400
+
 Search All device
 https://device-manager.sa-demo.staging.corp.mongodb.com/search/vector?type=0&limit=2
+
 Search Gradual Drift device
 https://device-manager.sa-demo.staging.corp.mongodb.com/search/vector?type=1&limit=2
+
 Search fixed camera device
 https://device-manager.sa-demo.staging.corp.mongodb.com/search/vector?type=2&limit=2
-Search random movement device
-https://device-manager.sa-demo.staging.corp.mongodb.com/search/vector?type=3&limit=2
 
 A Charts create to view the metrics of device:https://charts.mongodb.com/charts-xing-jiang-thxeh/public/dashboards/b4c31790-b84f-4177-b183-b5369cf957cd
