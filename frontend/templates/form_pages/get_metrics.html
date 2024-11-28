@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>Get Metrics</h2>
+<form method="POST" action="/get_metrics">
+    <div class="mb-3">
+        <label for="sn" class="form-label">SN</label>
+        <input type="text" class="form-control" id="sn" name="sn" required>
+    </div>
+    <div class="mb-3">
+        <label for="start_time" class="form-label">Start Time</label>
+        <input type="number" class="form-control" id="start_time" name="start_time" required>
+    </div>
+    <div class="mb-3">
+        <label for="end_time" class="form-label">End Time</label>
+        <input type="number" class="form-control" id="end_time" name="end_time" required>
+    </div>
+    <button type="submit" class="btn btn-primary">Submit</button>
+</form>
+{% endblock %}
