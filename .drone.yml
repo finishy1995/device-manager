@@ -10,9 +10,6 @@ trigger:
 steps:
 - name: publish
   image: plugins/kaniko-ecr
-  environment:
-    TOKEN:
-      from_secret: mongodb_args
   settings:
     create_repository: true
     registry: 795250896452.dkr.ecr.us-east-1.amazonaws.com
