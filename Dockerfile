@@ -13,7 +13,7 @@ WORKDIR /processor-build
 ADD go.mod .
 ADD go.sum .
 RUN go mod download
-COPY . .
+COPY enhanced enhanced
 COPY enhanced/processor/etc /app/processor/etc
 
 # 替换数据库连接字符串
@@ -28,7 +28,7 @@ RUN go build -ldflags="-s -w" -o /app/processor/processor enhanced/processor/pro
 WORKDIR /http-build
 ADD go.mod .
 ADD go.sum .
-COPY . .
+COPY enhanced enhanced
 COPY enhanced/http/etc /app/http/etc
 
 # 替换数据库连接字符串
