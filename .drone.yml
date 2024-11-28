@@ -23,8 +23,10 @@ steps:
       from_secret: ecr_access_key
     secret_key:
       from_secret: ecr_secret_key
+    mongodb:
+      from_secret: MONGODB
     build_args:
-      - DB_CONNECTION_STRING=${MONGODB}
+      - DB_CONNECTION_STRING=$MONGODB
   when:
     event:
     - push
