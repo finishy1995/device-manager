@@ -36,8 +36,8 @@ RUN sed -i 's|DataSource:.*|DataSource: "'${DB_CONNECTION_STRING}'"|' /app/http/
 RUN go mod tidy
 RUN go build -ldflags="-s -w" -o /app/http/http enhanced/http/http.go
 
-# 使用最小化的 scratch 镜像
-FROM scratch
+# 使用最小化的 scratch 镜像 (不支持 sh)
+FROM golang:alpine
 
 # 复制 CA 证书和时区信息
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
