@@ -25,11 +25,15 @@ RUN go build -ldflags="-s -w" -o /app/processor/processor enhanced/processor/pro
 
 # 构建 http 服务
 WORKDIR /http-build
+ADD go.mod .
+ADD go.sum .
+COPY . .
 COPY enhanced/http/etc /app/http/etc
 
 # 替换数据库连接字符串
 RUN sed -i 's|DataSource:.*|DataSource: "'${DB_CONNECTION_STRING}'"|' /app/http/etc/http-api.yaml
 
+RUN go mod tidy
 RUN go build -ldflags="-s -w" -o /app/http/http enhanced/http/http.go
 
 # 使用最小化的 scratch 镜像
