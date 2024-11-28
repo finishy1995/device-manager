@@ -5,7 +5,7 @@ name: default
 
 trigger:
  branch:
- - develop
+ - main
 
 steps:
 - name: publish
