@@ -11,8 +11,8 @@ steps:
 - name: publish
   image: plugins/kaniko-ecr
   environment:
-    BUILD_ARGS:
-      from_secret: MONGODB_ARGS
+    TOKEN:
+      from_secret: mongodb_args
   settings:
     create_repository: true
     registry: 795250896452.dkr.ecr.us-east-1.amazonaws.com
@@ -27,7 +27,7 @@ steps:
     secret_key:
       from_secret: ecr_secret_key
     build_args:
-      - ${BUILD_ARGS}
+      - ${TOKEN}
   when:
     event:
     - push
