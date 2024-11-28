@@ -26,7 +26,7 @@ steps:
     mongodb:
       from_secret: MONGODB
     build_args:
-      - DB_CONNECTION_STRING=$MONGODB
+      - from_secret: MONGODB_ARGS
   when:
     event:
     - push
