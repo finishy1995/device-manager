@@ -5,16 +5,16 @@ name: default
 
 trigger:
  branch:
- - main
+ - develop
 
 steps:
-- name: publish-legacy-http
+- name: publish
   image: plugins/kaniko-ecr
   settings:
     create_repository: true
     registry: 795250896452.dkr.ecr.us-east-1.amazonaws.com
-    repo: sa-demo/${DRONE_REPO_NAME}/legacy-http
-    dockerfile: legacy/http/Dockerfile
+    repo: sa-demo/${DRONE_REPO_NAME}/all-in-one
+    dockerfile: Dockerfile
     context: .
     tags:
       - git-${DRONE_COMMIT_SHA:0:7}
@@ -23,23 +23,23 @@ steps:
       from_secret: ecr_access_key
     secret_key:
       from_secret: ecr_secret_key
+    build_args:
+      - DB_CONNECTION_STRING=${MONGODB}
   when:
     event:
     - push
 
-
-- name: deploy-etcd
+- name: deploy
   image: public.ecr.aws/kanopy/drone-helm:v3
   environment:
-    RELEASE: device-manager-etcd
+    RELEASE: device-manager-all
   settings:
     chart: mongodb/web-app
     chart_version: 4.24.2
     add_repos: [mongodb=https://10gen.github.io/helm-charts]
     namespace: ${NAMESPACE}
     release: ${RELEASE}
-    values_files: [ "environments/base.yaml", "environments/backend.staging.yaml" ]
-    values: image.tag=latest,image.repository=bitnami/etcd
+    values: image.tag=git-${DRONE_COMMIT_SHA:0:7},image.repository=795250896452.dkr.ecr.us-east-1.amazonaws.com/sa-demo/${DRONE_REPO_NAME}/all-in-one,ingress.enabled=true,ingress.hosts[0]=device-manager.sa-demo.staging.corp.mongodb.com,mesh.enabled=true
     api_server: https://api.staging.corp.mongodb.com
     kubernetes_token:
       from_secret: staging_kubernetes_token
