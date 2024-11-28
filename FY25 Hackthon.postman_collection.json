@@ -1,0 +1,228 @@
+{
+	"info": {
+		"_postman_id": "942bf540-ad88-4689-ad9a-4e06df293d8f",
+		"name": "FY25 Hackthon",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "3376718"
+	},
+	"item": [
+		{
+			"name": "generate_metadata",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://{{ip_port}}/generate/metadata?device_number=10000&device_param_number=200",
+					"protocol": "http",
+					"host": [
+						"{{ip_port}}"
+					],
+					"path": [
+						"generate",
+						"metadata"
+					],
+					"query": [
+						{
+							"key": "device_number",
+							"value": "10000"
+						},
+						{
+							"key": "device_param_number",
+							"value": "200"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "generate_devicedata",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://{{ip_port}}/generate/devicedata?device_number=1000&start_time=1732438800&end_time=1732442400",
+					"protocol": "http",
+					"host": [
+						"{{ip_port}}"
+					],
+					"path": [
+						"generate",
+						"devicedata"
+					],
+					"query": [
+						{
+							"key": "device_number",
+							"value": "1000"
+						},
+						{
+							"key": "start_time",
+							"value": "1732438800"
+						},
+						{
+							"key": "end_time",
+							"value": "1732442400"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "generate_vectordata",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://{{ip_port}}/generate/vector?start_time=1732438800&end_time=1732439400",
+					"protocol": "http",
+					"host": [
+						"{{ip_port}}"
+					],
+					"path": [
+						"generate",
+						"vector"
+					],
+					"query": [
+						{
+							"key": "device_number",
+							"value": "10",
+							"disabled": true
+						},
+						{
+							"key": "start_time",
+							"value": "1732438800"
+						},
+						{
+							"key": "end_time",
+							"value": "1732439400"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "vector search",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://{{ip_port}}/search/vector?type=0&limit=2",
+					"protocol": "http",
+					"host": [
+						"{{ip_port}}"
+					],
+					"path": [
+						"search",
+						"vector"
+					],
+					"query": [
+						{
+							"key": "type",
+							"value": "0",
+							"description": "0: search all, 1: Gradual Drift; 2. search fixed camera; 3: search random movement camera"
+						},
+						{
+							"key": "limit",
+							"value": "2"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "update_metadata",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"sn\": \"SN-111111\",\r\n    \"params\": {\r\n        \"1\": \"12\",\r\n        \"2\": \"23\"\r\n    }\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://{{ip_port}}/metadata",
+					"protocol": "http",
+					"host": [
+						"{{ip_port}}"
+					],
+					"path": [
+						"metadata"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "update_metadata Random",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"device_number\": 500,\r\n    \"device_param_number\": 20,\r\n    \"thread\": 1,\r\n    \"seconds\": 30\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://{{ip_port}}/update/metadata",
+					"protocol": "http",
+					"host": [
+						"{{ip_port}}"
+					],
+					"path": [
+						"update",
+						"metadata"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "get update_metadata Random",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"device_number\": 500,\r\n    \"device_param_number\": 20,\r\n    \"thread\": 8,\r\n    \"seconds\": 30\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://{{ip_port}}/update/result?job_id=669547469",
+					"protocol": "http",
+					"host": [
+						"{{ip_port}}"
+					],
+					"path": [
+						"update",
+						"result"
+					],
+					"query": [
+						{
+							"key": "job_id",
+							"value": "669547469"
+						}
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}
