@@ -37,7 +37,7 @@ RUN go mod tidy
 RUN go build -ldflags="-s -w" -o /app/http/http enhanced/http/http.go
 
 # 使用最小化的 scratch 镜像 (不支持 sh)
-FROM golang:alpine
+FROM busybox:glibc
 
 # 复制 CA 证书和时区信息
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
@@ -56,6 +56,9 @@ COPY --from=builder /app/http/etc /app/http/etc
 # 添加启动脚本
 COPY start.sh /app/start.sh
 RUN chmod +x /app/start.sh
+RUN sed -i 's/\r$//' start.sh
+
+RUN chmod +x /app/processor/processor /app/http/http
 
 # 使用脚本作为容器入口点
 CMD ["/app/start.sh"]
