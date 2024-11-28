@@ -1,6 +1,6 @@
 Name: http-api
 Host: 0.0.0.0
-Port: 8888
+Port: 80
 DataSource: "mongodb://root:123456@localhost"
 Discov:
   Target: localhost:8080
