@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/zeromicro/go-zero/core/discov"
 	"github.com/zeromicro/go-zero/zrpc"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -39,12 +38,7 @@ func NewServiceContext(c config.Config) *ServiceContext {
 	if err != nil {
 		log.Fatal(fmt.Sprintf("Failed to ping MongoDB: %v", err))
 	}
-	rpcConn := zrpc.MustNewClient(zrpc.RpcClientConf{
-		Etcd: discov.EtcdConf{
-			Hosts: []string{c.Etcd},
-			Key:   c.Processor,
-		},
-	})
+	rpcConn := zrpc.MustNewClient(c.Discov)
 
 	return &ServiceContext{
 		Config:                 c,

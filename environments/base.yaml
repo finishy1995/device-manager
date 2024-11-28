@@ -1,0 +1,17 @@
+---
+mesh:
+  enabled: true
+ingress:
+  enabled: true
+services:
+  - name: http
+    ingress: true
+    port: 8888
+    protocol: TCP
+    targetPort: 8888
+    type: ClusterIP
+resources:
+  limits:
+    memory: 250Mi
+  requests:
+    memory: 150Mi
