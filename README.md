@@ -1,4 +1,6 @@
-﻿# Project Introduction
+﻿[![Build Status](https://drone.corp.mongodb.com/api/badges/finishy1995/device-manager/status.svg?ref=refs/heads/main)](https://drone.corp.mongodb.com/finishy1995/device-manager)
+
+# Project Introduction
     Device Manage is a device management service developed in Go. 
     It provides efficient functions for device status updates and metadata management. 
     The project is currently divided into two implementations, Legacy and Enhance. 
