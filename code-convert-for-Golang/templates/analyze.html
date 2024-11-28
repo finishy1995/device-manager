@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        justify-content: center;
+        height: 100vh;
+        background-color: #f0f0f0;
+      }
+
+      .sidebar {
+        width: 200px;
+        background-color: #333;
+        color: #fff;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding-top: 20px;
+      }
+
+      .sidebar a {
+        color: #fff;
+        text-decoration: none;
+        padding: 10px;
+        width: 100%;
+        text-align: center;
+        display: block;
+      }
+
+      .sidebar a:hover {
+        background-color: #444;
+      }
+
+      .sidebar a.active {
+        background-color: #589636;
+      }
+
+      .container {
+        flex-grow: 1;
+        background-color: #fff;
+        padding: 20px;
+        border-radius: 15px;
+        box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+        text-align: center;
+        width: 80%;
+        max-width: 800px;
+        height: 100%;
+        max-height: 800px;
+        overflow-y: auto;
+        margin: 20px;
+      }
+
+      .logo {
+        width: 200px;
+        margin-bottom: 20px;
+      }
+
+      label,
+      input[type="text"] {
+        display: inline-block;
+        margin: 10px 5px;
+      }
+
+      input[type="submit"] {
+        background-color: #589636;
+        color: #fff;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 5px;
+        cursor: pointer;
+        display: block;
+        margin: 20px auto;
+      }
+
+      input[type="submit"]:hover {
+        background-color: #457525;
+      }
+
+      #progress-bar {
+        width: 80%;
+        height: 20px;
+        margin: 20px auto;
+        display: none;
+      }
+
+      #file-list {
+        list-style-type: none;
+        padding: 0;
+        margin: 20px auto;
+        width: 80%;
+        text-align: left;
+        color: gray;
+        font-size: 0.9em;
+      }
+      #file-list li {
+        padding: 1px 0;
+        border-bottom: 0.1px solid #ffffff;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="sidebar">
+      <h3 class="sidebar-title">ModFac for Go</h3>
+      <a href="analyze.html" class="active">Analyze</a>
+      <a href="schema.html">Schema Mapping</a>
+      <a href="/">Code Refactor</a>
+      <a href="test.html">Unit Test</a>
+      <a href="migrate.html">Migrate</a>
+    </div>
+    <div class="container">
+      <img
+        class="logo"
+        src="/static/pics/mongodb-logo.svg"
+        alt="MongoDB Logo"
+      />
+
+      <h2>Codebase Analysis Report</h2>
+
+      <ul
+        style="
+          color: black;
+          font-size: 1em;
+          text-align: left;
+          margin: 30px;
+          list-style-type: disc;
+          padding-left: 20px;
+          line-height: 1.5em;
+        "
+      >
+        <h3>Codebase Analysis Report provides:</h3>
+
+        <li>
+          <strong>Comprehensive Understanding:</strong> Detailed insights into
+          the application's structure, technology stack, and business processes.
+        </li>
+        <li>
+          <strong>Technical Insight:</strong> Outlines the technology stack
+          used, aiding in understanding the technical requirements and skills
+          needed.
+        </li>
+        <li>
+          <strong>Business Overview:</strong> Detailed analysis of the
+          application's business entities and processes.
+        </li>
+        <li>
+          <strong>Dependency Identification:</strong> Clear understanding of the
+          application's dependencies, helping identify potential areas of risk.
+        </li>
+        <li>
+          <strong>Best Practices:</strong> Overview of the best practices
+          followed in the application, serving as a benchmark for other
+          projects.
+        </li>
+        <li>
+          <strong>Maintenance and Enhancement:</strong> Facilitates the
+          maintenance and enhancement of the application by identifying areas
+          for optimization.
+        </li>
+        <li>
+          <strong>Knowledge Transfer:</strong> Serves as a valuable resource for
+          onboarding new team members, reducing the learning curve.
+        </li>
+      </ul>
+      <form action="" method="post">
+        <label for="path">Your legacy code path:</label>
+        <input type="text" id="path" name="path" style="width: 50%" /><br />
+      </form>
+      <input
+        type="submit"
+        value="Generate Report"
+        onclick="checkPathAndStartProgressBar()"
+      />
+
+      <script>
+        function checkPathAndStartProgressBar() {
+          const pathInput = document.getElementById("path");
+          if (!pathInput.value.trim()) {
+            alert("Path cannot be empty.");
+            return;
+          }
+          startProgressBar();
+        }
+
+        function startProgressBar() {
+          const progressBar = document.getElementById("progress-bar");
+          progressBar.style.display = "block";
+          let width = 0;
+          const interval = setInterval(() => {
+            if (width >= 100) {
+              clearInterval(interval);
+              showViewReportButton();
+            } else {
+              width++;
+              progressBar.value = width;
+            }
+          }, 20); // 1 second to complete
+        }
+
+        function showViewReportButton() {
+          const viewReportButton = document.createElement("button");
+          viewReportButton.textContent = "View Report";
+          viewReportButton.style.backgroundColor = "#589636";
+          viewReportButton.style.color = "#fff";
+          viewReportButton.style.border = "none";
+          viewReportButton.style.padding = "10px 20px";
+          viewReportButton.style.borderRadius = "5px";
+          viewReportButton.style.cursor = "pointer";
+          viewReportButton.style.display = "inline-block";
+          viewReportButton.style.marginLeft = "10px";
+          viewReportButton.onclick = function () {
+            window.open(
+              "http://127.0.0.1:5000/static/reports/report.html",
+              "_blank"
+            );
+          };
+
+          // Find the "Generate Report" button and insert the new button after it
+          const generateReportButton = document.querySelector(
+            'input[type="submit"]'
+          );
+          generateReportButton.parentNode.insertBefore(
+            viewReportButton,
+            generateReportButton.nextSibling
+          );
+        }
+      </script>
+      <progress id="progress-bar" max="100" value="0"></progress>
+
+      <ul id="file-list"></ul>
+    </div>
+  </body>
+</html>

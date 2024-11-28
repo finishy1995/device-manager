@@ -63,12 +63,11 @@ def generate_new_code(path, prompt):
     # with open(prompt_file, "r") as file:
     #    prompts = file.read().strip()
     prompts = prompt
-
+    j = 0
     print(f"prompts: {prompts}")
     for i, filename in enumerate(os.listdir(path)):
         if filename.endswith(".go"):
             file_list.append({"name": filename, "status": "Processing"})
-            # prompts = "The file was created by goctl to support MySQL access, now we need to refactoring the file to support MongoDB"
             fullfilepath = path + "/" + filename
             genfile = new_path_dir + "/" + filename
             filecontent = fileAccess.load_file(fullfilepath)
@@ -79,7 +78,9 @@ def generate_new_code(path, prompt):
             processedResponse = llmClient.process_llm_response(response)
             # print(f"write file:\n{file}")
             fileAccess.output_content(genfile, processedResponse)
-            progress = (i + 1) / total_files
+            progress = (j + 1) / total_files
+            print(f"Processing file {j + 1} of {total_files}")
+            j = j+1
             print(f"current progress: {progress}")
             # update the file list
             for file in file_list:
