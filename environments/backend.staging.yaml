@@ -1,0 +1,8 @@
+ingress:
+  enabled: true
+  hosts:
+    - device-manager.sa-demo.staging.corp.mongodb.com
+env:
+  LOG_LEVEL: info
+  APP_ID: backend
+  PORT: 80

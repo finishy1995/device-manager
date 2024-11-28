@@ -60,5 +60,7 @@ RUN sed -i 's/\r$//' start.sh
 
 RUN chmod +x /app/processor/processor /app/http/http
 
+EXPOSE 80
+
 # 使用脚本作为容器入口点
 CMD ["/app/start.sh"]
