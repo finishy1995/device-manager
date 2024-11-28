@@ -2,7 +2,6 @@ package logic
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"strconv"
 
@@ -11,6 +10,7 @@ import (
 	"finishy1995/device-manager/enhanced/model"
 
 	"github.com/zeromicro/go-zero/core/logx"
+	"time"
 )
 
 type UpdateMetadataLogic struct {
@@ -34,24 +34,29 @@ func (l *UpdateMetadataLogic) UpdateMetadata(req *types.UpdateMetadataRequest) (
 	if req.SN == "" || req.Params == nil || len(req.Params) == 0 {
 		return
 	}
-	data := make([]*model.DeviceMetadata, 0, len(req.Params))
+	// Create a new DeviceMetadata instance
+	deviceMetadata := &model.DeviceMetadata{
+		DeviceSn: req.SN,
+		Params:   make(map[string]model.Param),
+	}
+	// Populate the Params map
 	for k, v := range req.Params {
-		t, errAtoi := strconv.Atoi(k)
+		_, errAtoi := strconv.Atoi(k)
 		if errAtoi != nil {
 			return resp, errors.New("param type must be int")
 		}
-
-		data = append(data, &model.DeviceMetadata{
-			DeviceSn:   req.SN,
-			ParamType:  int64(t),
-			ParamValue: sql.NullString{String: v, Valid: true},
-		})
+		deviceMetadata.Params[k] = model.Param{
+			PV: v,
+			CT: time.Now(),
+			UT: time.Now(),
+		}
 	}
-	// TODO: batch result error handler
+	// Prepare data for upsert
+	data := []*model.DeviceMetadata{deviceMetadata}
+	// Perform the upsert operation
 	_, err = l.svcCtx.DeviceMetadataModel.Upsert(l.ctx, data)
 	if err == nil {
 		resp.Code = 200
 	}
-
 	return
 }

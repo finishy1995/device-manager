@@ -66,7 +66,7 @@ type GetUpdateResultResp struct {
 }
 
 type SearchBadDeviceReq struct {
-	Type  int `form:"type"` // 0: search all, 1: search fixed camera, 2: search random movement camera
+	Type  int `form:"type"` // 0: search all, 1: Gradual Drift; 2. search fixed camera; 3: search random movement camera
 	Limit int `form:"limit"`
 }
 

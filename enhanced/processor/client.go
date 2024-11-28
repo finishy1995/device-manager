@@ -37,4 +37,21 @@ func main() {
 	}
 	// Print the response
 	fmt.Printf("Response from GenerateDemoMetadata: %+v\n", resp)
+
+       // Example: Call GenerateDemoDevicedata
+        req1 := &processorclient.GenerateDemoDeviceDataReq{
+                DeviceNumber: 10,
+		StartTime: 1730817621,
+		EndTime: 1730817821,
+        }
+        resp1, err1 := processorClient.GenerateDemoDeviceData(ctx, req1)
+        if err1 != nil {
+                log.Fatalf("Failed to call GenerateDemoDeviceData: %v", err1)
+        }
+        // Print the response
+        fmt.Printf("Response from GenerateDemoDeviceData: %+v\n", resp1)
+
+
+
+
 }

@@ -110,14 +110,21 @@ func (t *task) Run(dataSource string) {
 func generateDemoMetadata(deviceNumber int32, deviceParamNumber int32) []*model.DeviceMetadata {
 	result := make([]*model.DeviceMetadata, 0, deviceNumber)
 	for i := 0; i < int(deviceNumber); i++ {
-		for j := 0; j < int(deviceParamNumber); j++ {
-			data := &model.DeviceMetadata{}
-			mark := i%2 + 1
-			data.DeviceSn = fmt.Sprintf("SN-%d%011d", mark, i)
-			data.ParamType = int64(j)
-			data.ParamValue = fmt.Sprintf("%05d", rand.Intn(90000)+10000)
-			result = append(result, data)
+		device := &model.DeviceMetadata{
+			DeviceSn: fmt.Sprintf("SN-%d%011d", i%2+1, i),
+			Params:   make(map[string]model.Param),
 		}
+		for j := 0; j < int(deviceParamNumber); j++ {
+			paramType := fmt.Sprintf("%d", j)
+			paramValue := fmt.Sprintf("%05d", rand.Intn(90000)+10000)
+			currentTime := time.Now()
+			device.Params[paramType] = model.Param{
+				PV: paramValue,
+				CT: currentTime,
+				UT: currentTime,
+			}
+		}
+		result = append(result, device)
 	}
 	return result
 }
@@ -128,15 +135,23 @@ func generateDemoMetadataByDeviceRange(startDevice, endDevice int32, deviceParam
 	for i := 0; i < batchSize; i++ {
 		// Select a random device number within the range [startDevice, endDevice]
 		randomDevice := rand.Int31n(endDevice-startDevice+1) + startDevice
-		for j := 0; j < int(deviceParamNumber); j++ {
-			data := &model.DeviceMetadata{}
-			mark := randomDevice%2 + 1
-			// Generate device SN
-			data.DeviceSn = fmt.Sprintf("SN-%d%011d", mark, randomDevice)
-			data.ParamType = int64(j)
-			data.ParamValue = fmt.Sprintf("%05d", rand.Intn(90000)+10000)
-			result = append(result, data)
+		// Create a new DeviceMetadata instance
+		device := &model.DeviceMetadata{
+			DeviceSn: fmt.Sprintf("SN-%d%011d", randomDevice%2+1, randomDevice),
+			Params:   make(map[string]model.Param),
 		}
+		// Generate parameters for the device
+		for j := 0; j < int(deviceParamNumber); j++ {
+			paramType := fmt.Sprintf("%d", j)
+			paramValue := fmt.Sprintf("%05d", rand.Intn(90000)+10000)
+			currentTime := time.Now()
+			device.Params[paramType] = model.Param{
+				PV: paramValue,
+				CT: currentTime,
+				UT: currentTime,
+			}
+		}
+		result = append(result, device)
 	}
 	return result
 }

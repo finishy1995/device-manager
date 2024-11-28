@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"math/rand"
+	"time"
 
 	"finishy1995/device-manager/enhanced/model"
 	"finishy1995/device-manager/enhanced/processor/internal/svc"
@@ -66,15 +67,15 @@ func generateDemoCameraData(deviceNumber int32, startTime int64, endTime int64) 
 		driftY := 0.0
 		driftZ := 0.0
 		if rotationType >= 90 && rotationType <= 94 {
-			driftX = rand.Float64()*0.5 - 0.25 // 每秒随机变化 -0.25 到 +0.25 度
-			driftY = rand.Float64()*0.5 - 0.25
-			driftZ = rand.Float64()*0.5 - 0.25
+			driftX = 0.3
+			driftY = 0.3
+			driftZ = 0.3
 		}
 
 		for j := startTime; j < endTime; j++ {
 			data := &model.DeviceCameraData{}
 			data.DeviceSn = fmt.Sprintf("SN-%d%011d", 1, i)
-			data.Timestamp = j
+			data.Timestamp = time.Unix(j, 0)
 			data.IsFixed = 0
 			if batteryDec {
 				batteryNow -= rand.Intn(10)
@@ -163,7 +164,7 @@ func generateDemoSweeperData(deviceNumber int32, startTime int64, endTime int64)
 		rotationY := getRandomRotation()
 		for j := startTime; j < endTime; j++ {
 			data := &model.DeviceSweeperData{}
-			data.DeviceSn = fmt.Sprintf("SN-%d%011d", 1, i)
+			data.DeviceSn = fmt.Sprintf("SN-%d%011d", 2, i)
 			data.Timestamp = j
 			data.IsCharging = boolToInt64(!batteryDec)
 			if batteryDec {
