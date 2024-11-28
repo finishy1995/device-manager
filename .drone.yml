@@ -24,10 +24,13 @@ steps:
     secret_key:
       from_secret: ecr_secret_key
     build_args:
-      - DB_CONNECTION_STRING=${MONGODB}
+      - DB_CONNECTION_STRING=${DB_CONNECTION_STRING}
   when:
     event:
     - push
+  environment:
+    DB_CONNECTION_STRING:
+      from_secret: mongodb
 
 - name: deploy
   image: public.ecr.aws/kanopy/drone-helm:v3
